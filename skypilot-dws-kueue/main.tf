@@ -59,7 +59,7 @@ module "project-services" {
 }
 
 module "infra" {
-  source = "../../../infrastructure"
+  source = "../common/infrastructure"
   count  = var.create_cluster ? 1 : 0
 
   project_id         = var.project_id
@@ -103,7 +103,7 @@ locals {
 }
 
 module "gcs" {
-  source      = "../../../modules/gcs"
+  source      = "../common/modules/gcs"
   count       = var.create_gcs_bucket ? 1 : 0
   project_id  = var.project_id
   bucket_name = var.gcs_bucket

@@ -28,10 +28,9 @@ envs:
 workdir: .
 
 file_mounts:
-  ~/sky_workdir/text-classification: ../text-classification
+  ~/sky_workdir/text-classification: text-classification
 
 num_nodes: 1
-
 
 setup: |
   set -e  # Exit if any command failed.
