@@ -53,13 +53,13 @@ provider "helm" {
 }
 
 module "namespace" {
-  source           = "../../modules/kubernetes-namespace"
+  source           = "../common/modules//kubernetes-namespace"
   create_namespace = true
   namespace        = var.namespace
 }
 
 module "inference-server" {
-  source            = "../../modules/inference-service"
+  source            = "../common/modules//inference-service"
   namespace         = var.namespace
   additional_labels = var.additional_labels
   autopilot_cluster = var.autopilot_cluster
