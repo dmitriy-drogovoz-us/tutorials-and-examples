@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat
+  template:
+    metadata:
+      labels:
+        app: chat
+    spec:
+      containers:
+        - name: app
+          image: us-central1-docker.pkg.dev/akvelon-gke-aieco/langchain-chatbot/app:latest
+          imagePullPolicy: Always
+          env:
+            - name: MODEL_BASE_URL
+              value: "http://huggingface-gemma2.kserve-test.34.55.113.238.sslip.io/openai/v1/"
+            - name: MODEL_NAME
+              value: "gemma2"
+            - name: DB_URI
+              value: "postgresql://postgres:superpassword@10.20.48.3:5432/chat"
+          ports:
+            - containerPort: 8501
+          livenessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+              scheme: HTTP
+            timeoutSeconds: 1
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+              scheme: HTTP
+            timeoutSeconds: 1
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 1
+              memory: 2Gi
+            requests:
+              cpu: 200m
+              memory: 1Gi
