@@ -21,9 +21,9 @@ spec:
             nvidia.com/gpu: "1"
         env:
         - name: MODEL_NAME
-          value: "google/gemma-3-4b-it"
+          value: "google/gemma-3-1b-it"
         - name: NEW_MODEL
-          value: "gemma-3-4b-it-sql-finetuned"
+          value: "gemma-3-1b-it-sql-finetuned"
         - name: LORA_R
           value: "8"
         - name: LORA_ALPHA
