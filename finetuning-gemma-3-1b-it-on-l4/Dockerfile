@@ -22,7 +22,7 @@ RUN pip3 install --no-cache-dir \
     accelerate==1.6.0 bitsandbytes==0.45.5 \
     datasets==3.5.0 transformers==4.51.3 \
     peft==0.15.1 trl==0.16.1 \
-    torch==2.6.0 torchvision==0.21.0
+    torch==2.5.1 torchvision==0.20.1
 
 COPY finetune.py /finetune.py
 
