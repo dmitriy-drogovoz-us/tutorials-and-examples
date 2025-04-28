@@ -153,7 +153,7 @@ convert_maxtext_checkpoint() {
         OUTPUT_CKPT_DIR_SCANNED=gs://${BUCKET_NAME}/final/scanned/${MODEL_NAME}_${VARIATION_NAME}
         OUTPUT_CKPT_DIR_UNSCANNED=gs://${BUCKET_NAME}/final/unscanned/${MODEL_NAME}_${VARIATION_NAME}
 
-        python3 MaxText/convert_gemma_chkpt.py \
+        python3 -m Maxtext.convert_gemma_chkpt \
         --base_model_path gs://${BUCKET_NAME}/base/${MODEL_NAME}_${VARIATION_NAME}/${VARIATION_NAME} \
         --maxtext_model_path=${OUTPUT_CKPT_DIR_SCANNED} \
         --model_size ${MODEL_SIZE}
@@ -247,7 +247,7 @@ convert_maxtext_checkpoint() {
 
         echo -e "$(date '+%Y-%m-%d %H:%M:%S'): Beginning conversion of scanned checkpoint to ${OUTPUT_CKPT_DIR_SCANNED}/0/items"
 
-        python3 MaxText/llama_or_mistral_ckpt.py \
+        python3 -m Maxtext.llama_or_mistral_ckpt \
         --base-model-path ${INPUT_CKPT_DIR_LOCAL} \
         --maxtext-model-path ${OUTPUT_CKPT_DIR_SCANNED} \
         --model-size ${MODEL_SIZE}
@@ -256,7 +256,7 @@ convert_maxtext_checkpoint() {
         
         echo -e "$(date '+%Y-%m-%d %H:%M:%S'): Beginning conversion of from scanned checkpoint ${OUTPUT_CKPT_DIR_SCANNED}/0/items to unscanned checkpoint ${OUTPUT_CKPT_DIR_UNSCANNED}/${RUN_NAME}"
         
-        python3 MaxText/generate_param_only_checkpoint.py \
+        python3 -m Maxtext.generate_param_only_checkpoint \
         MaxText/configs/base.yml \
         async_checkpointing=false \
         base_output_directory=${OUTPUT_CKPT_DIR_UNSCANNED} \
@@ -288,7 +288,7 @@ convert_maxtext_checkpoint() {
                     SAVE_QUANT_PARAMS_PATH="${OUTPUT_CKPT_DIR}/${QUANTIZE_TYPE}"
 
                     echo -e "$(date '+%Y-%m-%d %H:%M:%S'): Beginning quantizing model ${MODEL_SIZE} with ${QUANTIZE_TYPE} and parameter path ${LOAD_PARAMS_PATH}"
-                    python3 MaxText/load_and_quantize_checkpoint.py \
+                    python3 -m Maxtext.load_and_quantize_checkpoint \
                     MaxText/configs/base.yml \
                     tokenizer_path=${TOKENIZER} \
                     load_parameters_path=${LOAD_PARAMS_PATH} \
@@ -321,7 +321,7 @@ convert_maxtext_checkpoint() {
     if [[ $MODEL_PATH == *"gemma"* ]]; then
         RUN_NAME=0
 
-        python3 MaxText/generate_param_only_checkpoint.py MaxText/configs/base.yml force_unroll=true model_name=${MAXTEXT_MODEL_NAME} async_checkpointing=false run_name=${RUN_NAME} load_parameters_path=${OUTPUT_CKPT_DIR_SCANNED}/0/items base_output_directory=${OUTPUT_CKPT_DIR_UNSCANNED}
+        python3 -m Maxtext.generate_param_only_checkpoint MaxText/configs/base.yml force_unroll=true model_name=${MAXTEXT_MODEL_NAME} async_checkpointing=false run_name=${RUN_NAME} load_parameters_path=${OUTPUT_CKPT_DIR_SCANNED}/0/items base_output_directory=${OUTPUT_CKPT_DIR_UNSCANNED}
         echo -e "$(date '+%Y-%m-%d %H:%M:%S'): Completed unscanning checkpoint to ${OUTPUT_CKPT_DIR_UNSCANNED}/${RUN_NAME}/checkpoints/0/items"
     fi
 }
