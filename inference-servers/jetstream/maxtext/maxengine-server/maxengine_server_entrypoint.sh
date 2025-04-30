@@ -1,4 +1,4 @@
 #!/bin/bash
 cd /maxtext
-python3 MaxText/maxengine_server.py \
+python3 -m MaxText.maxengine_server \
 MaxText/configs/base.yml $@
