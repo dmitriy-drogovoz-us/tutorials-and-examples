@@ -2,13 +2,13 @@ apiVersion: v1
 entries:
   skippy:
   - apiVersion: v2
-    appVersion: v1.3
-    created: "2025-04-29T01:14:05.965428003Z"
+    appVersion: v1.4
+    created: "2025-04-30T23:25:44.139996987Z"
     description: A Helm chart for deploying the skippy controller.
-    digest: 43953c11926c37e5a05a0920e5d2a436fdafb5d8f3715b31d9d01a2678381582
+    digest: 61479f52f89179caf234da83d982551568c1701e6f7ea3567d71d46dc41cd005
     name: skippy
     type: application
     urls:
     - https://ai-on-gke.github.io/tutorials-and-examples/skippy-chart/skippy-0.1.0.tgz
     version: 0.1.0
-generated: "2025-04-29T01:14:05.964525664Z"
+generated: "2025-04-30T23:25:44.138837458Z"
