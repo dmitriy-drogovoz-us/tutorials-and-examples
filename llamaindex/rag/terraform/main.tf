@@ -20,7 +20,7 @@ locals {
 }
 
 module "gke_cluster" {
-  source = "../../../common/infrastructure"
+  source = "github.com/akvelon/gkeaiinfra/common/infrastructure?ref=main"
 
   project_id        = var.project_id
   cluster_name      = local.cluster_name

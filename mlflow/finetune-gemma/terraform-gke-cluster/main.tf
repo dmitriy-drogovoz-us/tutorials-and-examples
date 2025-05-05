@@ -59,7 +59,7 @@ module "project-services" {
 }
 
 module "infra" {
-  source = "../../../common/infrastructure"
+  source = "github.com/akvelon/gkeaiinfra/common/infrastructure?ref=main"
   count  = var.create_cluster ? 1 : 0
 
   project_id        = var.project_id
