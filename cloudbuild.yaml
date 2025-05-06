@@ -16,7 +16,7 @@ steps:
 - id: "validate platform"
   # name: "gcr.io/$PROJECT_ID/terraform"
   name: "hashicorp/terraform:latest"
-  dir: "github.com/akvelon/gkeaiinfra/common/infrastructure/"
+  dir: "github.com/ai-on-gke/common-infra/common/infrastructure/"
   waitFor: ["-"]
   script: |
     set -e
@@ -26,7 +26,7 @@ steps:
 - id: 'create gke cluster'
   # name: 'gcr.io/$PROJECT_ID/terraform'
   name: "hashicorp/terraform:latest"
-  dir: 'github.com/akvelon/gkeaiinfra/common/infrastructure/'
+  dir: 'github.com/ai-on-gke/common-infra/common/infrastructure/'
   allowFailure: true
   waitFor: ['validate platform']
   env:
@@ -54,7 +54,7 @@ steps:
 
 - id: 'dummy step with a failure'
   name: "hashicorp/terraform:latest"
-  dir: 'github.com/akvelon/gkeaiinfra/common/infrastructure'
+  dir: 'github.com/ai-on-gke/common-infra/common/infrastructure'
   entrypoint: 'sh'
   allowFailure: true
   waitFor: ['create gke cluster']
@@ -69,7 +69,7 @@ steps:
 
 - id: 'connect to the cluster'
   name: "hashicorp/terraform:latest"
-  dir: 'github.com/akvelon/gkeaiinfra/common/infrastructure'
+  dir: 'github.com/ai-on-gke/common-infra/common/infrastructure'
   entrypoint: 'sh'
   allowFailure: true
   waitFor: ['create gke cluster']
@@ -90,7 +90,7 @@ steps:
 
 - id: 'invoke the cluster'
   name: "hashicorp/terraform:latest"
-  dir: 'github.com/akvelon/gkeaiinfra/common/infrastructure'
+  dir: 'github.com/ai-on-gke/common-infra/common/infrastructure'
   entrypoint: 'sh'
   allowFailure: true
   waitFor: ['connect to the cluster']
@@ -106,7 +106,7 @@ steps:
 - id: 'cleanup gke cluster'
   # name: 'gcr.io/$PROJECT_ID/terraform'
   name: "hashicorp/terraform:latest"
-  dir: 'github.com/akvelon/gkeaiinfra/common/infrastructure/'
+  dir: 'github.com/ai-on-gke/common-infra/common/infrastructure/'
   allowFailure: true
   waitFor: ['create gke cluster', 'dummy step with a failure']
   entrypoint: 'sh'

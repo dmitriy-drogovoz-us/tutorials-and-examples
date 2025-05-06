@@ -59,7 +59,7 @@ module "project-services" {
 }
 
 module "infra" {
-  source = "github.com/akvelon/gkeaiinfra/common/infrastructure?ref=main"
+  source = "github.com/ai-on-gke/common-infra/common/infrastructure?ref=main"
   count  = var.create_cluster ? 1 : 0
 
   project_id         = var.project_id
@@ -103,7 +103,7 @@ locals {
 }
 
 module "gcs" {
-  source      = "github.com/akvelon/gkeaiinfra/common/modules/gcs?ref=main"
+  source      = "github.com/ai-on-gke/common-infra/common/modules/gcs?ref=main"
   count       = var.create_gcs_bucket ? 1 : 0
   project_id  = var.project_id
   bucket_name = var.gcs_bucket
