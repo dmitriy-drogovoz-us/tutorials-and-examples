@@ -66,7 +66,7 @@ module "project-services" {
 }
 
 module "gke_cluster" {
-  source            = "github.com/ai-on-gke/common-infra/common/infrastructure?ref=main"
+  source            = "github.com/ai-on-gke/common-infra/common/infrastructure?ref=common-infra"
   project_id        = var.project_id
   cluster_name      = local.cluster_name
   cluster_location  = var.cluster_location
