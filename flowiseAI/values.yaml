@@ -1,0 +1,8 @@
+externalPostgresql:
+  enabled: true
+  host: 10.172.0.3
+  port: 5432
+  username: metaflow-user
+  existingSecret: db-secret
+  existingSecretKeyPassword: password
+  database: metaflow-tutorial
