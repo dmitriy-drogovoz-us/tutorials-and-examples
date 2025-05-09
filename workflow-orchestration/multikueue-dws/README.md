@@ -1,7 +1,7 @@
 # Multikueue-dws-integration
 
 >[!NOTE]
->This repository provides the files needed to demonstrate how to use MultiKueue with Dynamic Workload Scheduler (DWS) GKE Autopilot.  This setup allows you to run workloads across multiple GKE clusters in different regions, automatically leveraging available GPU resources thanks to DWS.
+>This repository provides the files needed to demonstrate how to use [MultiKueue](https://kueue.sigs.k8s.io/docs/concepts/multikueue/) with [Dynamic Workload Scheduler](https://cloud.google.com/blog/products/compute/introducing-dynamic-workload-scheduler?e=48754805) (DWS) and [GKE Autopilot](https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-overview).  This setup allows you to run workloads across multiple GKE clusters in different regions, automatically leveraging available GPU resources thanks to DWS.
 
 
 # Repository Contents
@@ -15,6 +15,12 @@ This repository contains the following files:
 * `job-multi-dws-autopilot.yaml`: Example job definition to be submitted to the MultiKueue setup.
 
 # Setup and Usage
+
+## Prerequisites
+- [Google Cloud](https://cloud.google.com/) account set up.
+- [gcloud](https://pypi.org/project/gcloud/) command line tool installed and configured to use your GCP project.
+- [kubectl](https://kubernetes.io/docs/tasks/tools/) command line utility is installed.
+- [terraform](https://developer.hashicorp.com/terraform/install) command line installed.
 
 ## Create Clusters
 
