@@ -59,6 +59,13 @@ variable "subnetwork_description" {
   default = ""
 }
 
+variable "iam_service_account_name" {
+  type = string
+}
+variable "k8s_service_account_name" {
+  type = string
+}
+
 
 #variable "cloudsql_instance" {
 #  type    = string
@@ -89,7 +96,7 @@ variable "image_repository_name" {
 }
 
 variable "image_repository_location" {
-  type = string
+  type    = string
   default = "us"
 }
 

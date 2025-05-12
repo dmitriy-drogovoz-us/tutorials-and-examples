@@ -20,13 +20,17 @@ cluster_location  = "us-central1"
 private_cluster   = false
 autopilot_cluster = true
 
-network_name           = "" # Leave empty to use the default name
-subnetwork_name        = "" # Leave empty to use the default name
-subnetwork_region      = "us-central1"
-subnetwork_cidr        = "10.128.0.0/20"
+network_name      = "" # Leave empty to use the default name
+subnetwork_name   = "" # Leave empty to use the default name
+subnetwork_region = "us-central1"
+subnetwork_cidr   = "10.128.0.0/20"
 
-cloudsql_instance               = "" # Leave empty to use the default name
-cloudsql_instance_region        = "us-central1"
-kubernetes_namespace            = "default"
+cloudsql_instance        = "" # Leave empty to use the default name
+cloudsql_instance_region = "us-central1"
+kubernetes_namespace     = "default"
 
 image_repository_name = ""
+
+
+iam_service_account_name = ""
+k8s_service_account_name = ""
