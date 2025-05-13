@@ -25,8 +25,9 @@ subnetwork_name   = "" # Leave empty to use the default name
 subnetwork_region = "us-central1"
 subnetwork_cidr   = "10.128.0.0/20"
 
-cloudsql_instance        = "" # Leave empty to use the default name
+cloudsql_instance_name   = "" # Leave empty to use the default name
 cloudsql_instance_region = "us-central1"
+cloudsql_database_name   = "" # Leave empty to use the default name
 kubernetes_namespace     = "default"
 
 image_repository_name = ""
@@ -34,3 +35,4 @@ image_repository_name = ""
 
 iam_service_account_name = ""
 k8s_service_account_name = ""
+

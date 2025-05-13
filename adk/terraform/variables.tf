@@ -66,30 +66,29 @@ variable "k8s_service_account_name" {
   type = string
 }
 
+variable "cloudsql_instance_name" {
+  type    = string
+  default = ""
+}
 
-#variable "cloudsql_instance" {
-#  type    = string
-#  default = ""
-#}
-#
-#variable "cloudsql_instance_region" {
-#  type        = string
-#  description = "GCP region for CloudSQL instance"
-#}
-#
-#variable "cloudsql_database_name" {
-#  type = string
-#}
-#variable "cloudsql_database_user" {
-#  type        = string
-#  description = "Cloud SQL instance user"
-#  default     = "flowise"
-#}
-#
-#variable "cloudsql_database_secret_name" {
-#  type = string
-#  default = "db-secret"
-#}
+variable "cloudsql_instance_region" {
+  type        = string
+  description = "GCP region for CloudSQL instance"
+}
+
+variable "cloudsql_database_name" {
+  type = string
+}
+variable "cloudsql_database_user_name" {
+  type        = string
+  description = "Cloud SQL instance user"
+  default     = "adk"
+}
+
+variable "cloudsql_database_secret_name" {
+  type    = string
+  default = "db-secret"
+}
 
 variable "image_repository_name" {
   type = string
@@ -100,3 +99,8 @@ variable "image_repository_location" {
   default = "us"
 }
 
+
+variable "kubernetes_namespace" {
+  type    = string
+  default = "default"
+}

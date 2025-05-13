@@ -26,8 +26,11 @@ module "aiplatform_workload_identity" {
   name                            = local.iam_service_account_name
   k8s_sa_name                     = local.k8s_service_account_name
   automount_service_account_token = true
-  namespace                       = "default"
-  roles                           = ["roles/aiplatform.user"]
-  project_id                      = var.project_id
-  depends_on                      = [module.gke_cluster]
+  namespace                       = var.kubernetes_namespace
+  roles = [
+    "roles/aiplatform.user",
+    "roles/cloudsql.client",
+  ]
+  project_id = var.project_id
+  depends_on = [module.gke_cluster]
 }
