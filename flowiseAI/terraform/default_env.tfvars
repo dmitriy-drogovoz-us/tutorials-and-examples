@@ -27,7 +27,11 @@ subnetwork_cidr        = "10.128.0.0/20"
 
 cloudsql_instance               = "" # Leave empty to use the default name
 cloudsql_instance_region        = "us-central1"
-kubernetes_namespace            = "default"
-kubernetes_service_account_name = "metaflow-tutorial-sa"
 
+kubernetes_namespace            = "default"
+
+iam_service_account_name = "" # Leave empty to use the default name
+k8s_service_account_name = "" # Leave empty to use the default name
+
+ollama_storage_bucket_name = "" # Leave empty to use the default name
 

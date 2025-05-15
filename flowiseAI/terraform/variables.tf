@@ -90,3 +90,15 @@ variable "kubernetes_namespace" {
   type = string
   default = "default"
 }
+
+variable "iam_service_account_name" {
+  type=string
+}
+
+variable "k8s_service_account_name" {
+  type=string
+}
+
+variable "ollama_storage_bucket_name" {
+  type=string
+}
