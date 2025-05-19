@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-terraform {
-  backend "gcs" {
-    bucket = "dimadrogovoz-tf-backend"
-    prefix = "terraform/state/dima-test-adk"
-  }
-}
+# terraform {
+#   backend "gcs" {
+#     bucket = "<BUCKET_NAME>"
+#     prefix = "terraform/state/temp"
+#   }
+# }
