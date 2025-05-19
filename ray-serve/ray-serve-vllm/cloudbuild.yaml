@@ -1,0 +1,7 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'us-docker.pkg.dev/$PROJECT_ID/llama-ray/llama-ray-serve:latest', '.']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'us-docker.pkg.dev/$PROJECT_ID/llama-ray/llama-ray-serve:latest']
+images:
+- 'us-docker.pkg.dev/$PROJECT_ID/llama-ray/llama-ray-serve:latest'
