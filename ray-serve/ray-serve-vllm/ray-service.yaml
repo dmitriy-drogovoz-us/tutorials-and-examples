@@ -42,7 +42,7 @@ spec:
                 name: llama-chat-templates
           containers:
             - name: ray-head
-              image: us-docker.pkg.dev/akvelon-gke-aieco/llama-ray/llama-ray-serve:latest
+              image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/llama-ray-serve:latest
               resources:
                 limits:
                   cpu: "2"
@@ -107,7 +107,7 @@ spec:
                 name: llama-chat-templates
             containers:
               - name: llm
-                image: us-docker.pkg.dev/akvelon-gke-aieco/llama-ray/llama-ray-serve:latest
+                image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/llama-ray-serve:latest
                 env:
                   - name: HUGGING_FACE_HUB_TOKEN
                     valueFrom:
