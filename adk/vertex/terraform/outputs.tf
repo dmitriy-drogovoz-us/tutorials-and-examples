@@ -40,7 +40,3 @@ output "image_repository_full_name" {
 output "k8s_service_account_name" {
   value = local.k8s_service_account_name
 }
-
-output "cloudsql_instance_fqdn" {
-  value = "${var.project_id}:${var.cloudsql_instance_region}:${local.cloudsql_instance_name}"
-}
