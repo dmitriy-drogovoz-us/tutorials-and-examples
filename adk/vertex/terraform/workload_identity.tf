@@ -29,7 +29,6 @@ module "aiplatform_workload_identity" {
   namespace                       = var.kubernetes_namespace
   roles                           = [
                                       "roles/aiplatform.user",
-                                      "roles/cloudsql.client",
                                     ]
   project_id                      = var.project_id
   depends_on                      = [module.gke_cluster]
