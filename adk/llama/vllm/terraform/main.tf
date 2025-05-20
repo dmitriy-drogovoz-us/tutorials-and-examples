@@ -59,7 +59,7 @@ module "project-services" {
 }
 
 module "infra" {
-  source = "github.com/ai-on-gke/common-infra/common/infrastructure?ref=main"
+  source = "terraform-google-modules/project-factory/google//modules/project_services"
   count  = var.create_cluster ? 1 : 0
 
   project_id        = var.project_id
