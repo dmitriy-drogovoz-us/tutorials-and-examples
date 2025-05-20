@@ -32,7 +32,7 @@ def get_weather(city: str) -> str:
     city_weather = {
         "paris": "The weather in Paris is sunny with a temperature of 25 degrees Celsius (77 degrees Fahrenheit).",
         "ottawa": "In Ottawa, it's currently cloudy with a temperature of 18 degrees Celsius (64 degrees Fahrenheit) and a chance of rain.",
-        "tokyo": "Tokyo is experiencing humid conditions with a temperature of 28 degrees Celsius (82 degrees Fahrenheit)."
+        "tokyo": "Tokyo sees humid conditions with a high of 28 degrees Celsius (82 degrees Fahrenheit) and possible rainfall."
     }
     result = city_weather.get(city.strip().lower(), f"Sorry, I don't have weather information in {city}.")
     print(f"-- Tool Result: '{result}' --")
@@ -56,7 +56,7 @@ weather_agent = LlmAgent(
 The user will provide a city name in a JSON format like {"city": "city_name"}.
 1. Extract the city name.
 2. Use the `get_weather` tool to find the weather.
-3. Return the output from the `get_weather` tool.
+3. Answer on user request based on the weather
 """,
     tools=[get_weather],
     input_schema=CityInput,
