@@ -22,11 +22,15 @@ module "workload_identity" {
   providers = {
     kubernetes = kubernetes.flowise
   }
-  source     = "terraform-google-modules/kubernetes-engine/google//modules/workload-identity"
-  name       = local.iam_service_account_name
+  source      = "terraform-google-modules/kubernetes-engine/google//modules/workload-identity"
+  name        = local.iam_service_account_name
   k8s_sa_name = local.k8s_service_account_name
-  namespace  = var.kubernetes_namespace
-  roles      = ["roles/storage.objectUser"]
-  project_id = var.project_id
-  depends_on = [module.gke_cluster]
+  namespace   = var.kubernetes_namespace
+  roles = [
+    "roles/storage.objectUser",
+    "roles/aiplatform.user"
+  ]
+  automount_service_account_token = true
+  project_id                      = var.project_id
+  depends_on                      = [module.gke_cluster]
 }

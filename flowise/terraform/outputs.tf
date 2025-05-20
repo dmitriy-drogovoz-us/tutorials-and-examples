@@ -44,10 +44,7 @@ output "cloudsql_database_name" {
   value = local.database_name
 }
 
+
 output "k8s_service_account_name" {
   value = local.k8s_service_account_name
-}
-
-output "ollama_storage_bucket_name" {
-  value = local.ollama_storage_bucket_name
 }

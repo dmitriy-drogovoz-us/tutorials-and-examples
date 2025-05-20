@@ -71,7 +71,7 @@ variable "cloudsql_instance_region" {
 }
 
 variable "cloudsql_database_name" {
-  type = string
+  type    = string
   default = "flowise"
 }
 
@@ -82,23 +82,19 @@ variable "cloudsql_database_user" {
 }
 
 variable "cloudsql_database_secret_name" {
-  type = string
+  type    = string
   default = "db-secret"
 }
 
 variable "kubernetes_namespace" {
-  type = string
+  type    = string
   default = "default"
 }
 
 variable "iam_service_account_name" {
-  type=string
+  type = string
 }
 
 variable "k8s_service_account_name" {
-  type=string
-}
-
-variable "ollama_storage_bucket_name" {
-  type=string
+  type = string
 }

@@ -48,26 +48,26 @@ module "gke_cluster" {
   subnetwork_name   = local.subnetwork_name
   subnetwork_region = var.subnetwork_region
   subnetwork_cidr   = var.subnetwork_cidr
-#  enable_gpu        = true
-#  gpu_pools = [
-#    {
-#      name               = "gpu-pool-l4"
-#      machine_type       = "g2-standard-24"
-#      node_locations     = "us-central1-a"
-#      autoscaling        = true
-#      min_count          = 1
-#      max_count          = 3
-#      disk_size_gb       = 100
-#      disk_type          = "pd-balanced"
-#      enable_gcfs        = true
-#      logging_variant    = "DEFAULT"
-#      accelerator_count  = 1
-#      accelerator_type   = "nvidia-l4"
-#      gpu_driver_version = "DEFAULT"
-#    }
-#  ]
+  #  enable_gpu        = true
+  #  gpu_pools = [
+  #    {
+  #      name               = "gpu-pool-l4"
+  #      machine_type       = "g2-standard-24"
+  #      node_locations     = "us-central1-a"
+  #      autoscaling        = true
+  #      min_count          = 1
+  #      max_count          = 3
+  #      disk_size_gb       = 100
+  #      disk_type          = "pd-balanced"
+  #      enable_gcfs        = true
+  #      logging_variant    = "DEFAULT"
+  #      accelerator_count  = 1
+  #      accelerator_type   = "nvidia-l4"
+  #      gpu_driver_version = "DEFAULT"
+  #    }
+  #  ]
   ray_addon_enabled = false
-  depends_on = [module.custom_network]
+  depends_on        = [module.custom_network]
 }
 
 locals {
