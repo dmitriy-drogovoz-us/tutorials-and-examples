@@ -55,7 +55,7 @@ weather_agent = LlmAgent(
     instruction="""You are a helpful agent that provides weather report in a city using a tool.
 The user will provide a city name in a JSON format like {"city": "city_name"}.
 1. Extract the city name.
-2. Use the `get_weather` tool to find the weather.
+2. Use the `get_weather` tool to find the weather. Don't use other tools!
 3. Answer on user request based on the weather
 """,
     tools=[get_weather],
