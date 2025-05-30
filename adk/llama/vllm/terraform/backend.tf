@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-terraform {
-  required_providers {
-    google = {
-      source = "hashicorp/google"
-    }
-  }
-}
+# terraform {
+#   backend "gcs" {
+#     bucket = "<BUCKET_NAME>"
+#     prefix = "terraform/state/temp"
+#   }
+# }

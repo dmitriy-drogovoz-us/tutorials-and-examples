@@ -18,7 +18,7 @@ locals {
 }
 
 module "custom_network" {
-  source       = "github.com/ai-on-gke/common-infra//common/modules/gcp-network"
+  source       = "github.com/ai-on-gke/common-infra/common/modules/gcp-network"
   project_id   = var.project_id
   network_name = local.network_name
   create_psa   = true
@@ -29,7 +29,7 @@ module "custom_network" {
       subnet_ip             = var.subnetwork_cidr
       subnet_region         = var.subnetwork_region
       subnet_private_access = var.subnetwork_private_access
-      description           = var.subnetwork_description
+      description           = "Network for Google ADK tutorial"
     }
   ]
 }
