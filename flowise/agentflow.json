@@ -3,8 +3,8 @@
     {
       "id": "supervisor_0",
       "position": {
-        "x": 577,
-        "y": 156
+        "x": 557.5578590798657,
+        "y": 131.3234365244449
       },
       "type": "customNode",
       "data": {
@@ -83,10 +83,10 @@
         ],
         "inputs": {
           "supervisorName": "Supervisor",
-          "supervisorPrompt": "You are a supervisor tasked with managing a conversation between the following workers: {team_members}.\nGiven the following user request, respond with the worker to act next.\nEach worker will perform a task and respond with their results and status.\nWhen finished, respond with FINISH.\nSelect strategically to minimize the number of steps taken.",
+          "supervisorPrompt": "You are a supervisor tasked with managing a conversation between the following workers: {team_members}.\nGiven the following user request, respond with the worker to act next.\nEach worker will perform a task and respond with their results and status.\nWhen finished, respond with FINISH.",
           "model": "{{chatGoogleVertexAI_0.data.instance}}",
           "agentMemory": "",
-          "summarization": "",
+          "summarization": true,
           "recursionLimit": 100,
           "inputModeration": ""
         },
@@ -105,16 +105,17 @@
       "width": 300,
       "height": 483,
       "positionAbsolute": {
-        "x": 577,
-        "y": 156
+        "x": 557.5578590798657,
+        "y": 131.3234365244449
       },
-      "selected": false
+      "selected": false,
+      "dragging": false
     },
     {
       "id": "worker_0",
       "position": {
-        "x": 969.3717362716295,
-        "y": 77.52271438462338
+        "x": 912.1646156665654,
+        "y": -245.4378388225167
       },
       "type": "customNode",
       "data": {
@@ -190,7 +191,7 @@
           "tools": "",
           "supervisor": "{{supervisor_0.data.instance}}",
           "model": "",
-          "promptValues": "{\"company\":\"Flowise Inc\",\"technology\":\"React, NodeJS, ExpressJS, Tailwindcss\"}",
+          "promptValues": "{\"company\":\"Flowise Inc\",\"technology\":\"Python\"}",
           "maxIterations": ""
         },
         "outputAnchors": [],
@@ -201,16 +202,16 @@
       "height": 722,
       "selected": false,
       "positionAbsolute": {
-        "x": 969.3717362716295,
-        "y": 77.52271438462338
+        "x": 912.1646156665654,
+        "y": -245.4378388225167
       },
       "dragging": false
     },
     {
       "id": "worker_1",
       "position": {
-        "x": 1369.3717362716295,
-        "y": 77.52271438462338
+        "x": 925.8943190776721,
+        "y": 527.3491366476958
       },
       "type": "customNode",
       "data": {
@@ -297,16 +298,16 @@
       "height": 722,
       "selected": false,
       "positionAbsolute": {
-        "x": 1369.3717362716295,
-        "y": 77.52271438462338
+        "x": 925.8943190776721,
+        "y": 527.3491366476958
       },
       "dragging": false
     },
     {
       "id": "chatGoogleVertexAI_0",
       "position": {
-        "x": 158.7158761213321,
-        "y": 130.29788886119354
+        "x": 86.92950964698997,
+        "y": 81.44327834393293
       },
       "type": "customNode",
       "data": {
@@ -422,11 +423,11 @@
         "inputs": {
           "cache": "",
           "modelName": "",
-          "customModelName": "gemini-2.0-flash",
-          "temperature": 0.9,
+          "customModelName": "gemini-2.5-pro-preview-03-25",
+          "temperature": "0.9",
           "allowImageUploads": "",
           "streaming": true,
-          "maxOutputTokens": "",
+          "maxOutputTokens": "64000",
           "topP": "",
           "topK": ""
         },
@@ -446,8 +447,8 @@
       "height": 670,
       "selected": false,
       "positionAbsolute": {
-        "x": 158.7158761213321,
-        "y": 130.29788886119354
+        "x": 86.92950964698997,
+        "y": 81.44327834393293
       },
       "dragging": false
     }
