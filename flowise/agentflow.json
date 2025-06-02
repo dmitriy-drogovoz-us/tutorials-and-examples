@@ -84,7 +84,7 @@
         "inputs": {
           "supervisorName": "Supervisor",
           "supervisorPrompt": "You are a supervisor tasked with managing a conversation between the following workers: {team_members}.\nGiven the following user request, respond with the worker to act next.\nEach worker will perform a task and respond with their results and status.\nWhen finished, respond with FINISH.",
-          "model": "{{chatGoogleVertexAI_0.data.instance}}",
+          "model": "{{chatOllama_0.data.instance}}",
           "agentMemory": "",
           "summarization": true,
           "recursionLimit": 100,
@@ -304,65 +304,51 @@
       "dragging": false
     },
     {
-      "id": "chatGoogleVertexAI_0",
+      "id": "chatOllama_0",
       "position": {
-        "x": 86.92950964698997,
-        "y": 81.44327834393293
+        "x": 107.23045826983534,
+        "y": 24.085814730611787
       },
       "type": "customNode",
       "data": {
-        "id": "chatGoogleVertexAI_0",
-        "label": "ChatGoogleVertexAI",
-        "version": 5.1,
-        "name": "chatGoogleVertexAI",
-        "type": "ChatGoogleVertexAI",
+        "id": "chatOllama_0",
+        "label": "ChatOllama",
+        "version": 5,
+        "name": "chatOllama",
+        "type": "ChatOllama",
         "baseClasses": [
-          "ChatGoogleVertexAI",
-          "ChatVertexAI",
-          "ChatGoogle",
-          "ChatGoogleBase",
+          "ChatOllama",
+          "ChatOllama",
           "BaseChatModel",
           "BaseLanguageModel",
           "Runnable"
         ],
         "category": "Chat Models",
-        "description": "Wrapper around VertexAI large language models that use the Chat endpoint",
+        "description": "Chat completion using open-source LLM on Ollama",
         "inputParams": [
           {
-            "label": "Connect Credential",
-            "name": "credential",
-            "type": "credential",
-            "credentialNames": [
-              "googleVertexAuth"
-            ],
-            "optional": true,
-            "description": "Google Vertex AI credential. If you are using a GCP service like Cloud Run, or if you have installed default credentials on your local machine, you do not need to set this credential.",
-            "id": "chatGoogleVertexAI_0-input-credential-credential"
+            "label": "Base URL",
+            "name": "baseUrl",
+            "type": "string",
+            "default": "http://localhost:11434",
+            "id": "chatOllama_0-input-baseUrl-string"
           },
           {
             "label": "Model Name",
             "name": "modelName",
-            "type": "asyncOptions",
-            "loadMethod": "listModels",
-            "id": "chatGoogleVertexAI_0-input-modelName-asyncOptions"
-          },
-          {
-            "label": "Custom Model Name",
-            "name": "customModelName",
             "type": "string",
-            "placeholder": "gemini-1.5-pro-exp-0801",
-            "description": "Custom model name to use. If provided, it will override the model selected",
-            "additionalParams": true,
-            "id": "chatGoogleVertexAI_0-input-customModelName-string"
+            "placeholder": "llama2",
+            "id": "chatOllama_0-input-modelName-string"
           },
           {
             "label": "Temperature",
             "name": "temperature",
             "type": "number",
+            "description": "The temperature of the model. Increasing the temperature will make the model answer more creatively. (Default: 0.8). Refer to <a target=\"_blank\" href=\"https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values\">docs</a> for more details",
             "step": 0.1,
             "default": 0.9,
             "optional": true,
-            "id": "chatGoogleVertexAI_0-input-temperature-number"
+            "id": "chatOllama_0-input-temperature-number"
           },
           {
             "label": "Allow Image Uploads",
@@ -371,7 +357,7 @@
             "description": "Allow image input. Refer to the <a href=\"https://docs.flowiseai.com/using-flowise/uploads#image\" target=\"_blank\">docs</a> for more details.",
             "default": false,
             "optional": true,
-            "id": "chatGoogleVertexAI_0-input-allowImageUploads-boolean"
+            "id": "chatOllama_0-input-allowImageUploads-boolean"
           },
           {
             "label": "Streaming",
@@ -380,35 +366,147 @@
             "default": true,
             "optional": true,
             "additionalParams": true,
-            "id": "chatGoogleVertexAI_0-input-streaming-boolean"
+            "id": "chatOllama_0-input-streaming-boolean"
           },
           {
-            "label": "Max Output Tokens",
-            "name": "maxOutputTokens",
-            "type": "number",
-            "step": 1,
+            "label": "JSON Mode",
+            "name": "jsonMode",
+            "type": "boolean",
+            "description": "Coerces model outputs to only return JSON. Specify in the system prompt to return JSON. Ex: Format all responses as JSON object",
             "optional": true,
             "additionalParams": true,
-            "id": "chatGoogleVertexAI_0-input-maxOutputTokens-number"
+            "id": "chatOllama_0-input-jsonMode-boolean"
           },
           {
-            "label": "Top Probability",
+            "label": "Keep Alive",
+            "name": "keepAlive",
+            "type": "string",
+            "description": "How long to keep connection alive. A duration string (such as \"10m\" or \"24h\")",
+            "default": "5m",
+            "optional": true,
+            "additionalParams": true,
+            "id": "chatOllama_0-input-keepAlive-string"
+          },
+          {
+            "label": "Top P",
             "name": "topP",
             "type": "number",
+            "description": "Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text. (Default: 0.9). Refer to <a target=\"_blank\" href=\"https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values\">docs</a> for more details",
             "step": 0.1,
             "optional": true,
             "additionalParams": true,
-            "id": "chatGoogleVertexAI_0-input-topP-number"
+            "id": "chatOllama_0-input-topP-number"
           },
           {
-            "label": "Top Next Highest Probability Tokens",
+            "label": "Top K",
             "name": "topK",
             "type": "number",
-            "description": "Decode using top-k sampling: consider the set of top_k most probable tokens. Must be positive",
+            "description": "Reduces the probability of generating nonsense. A higher value (e.g. 100) will give more diverse answers, while a lower value (e.g. 10) will be more conservative. (Default: 40). Refer to <a target=\"_blank\" href=\"https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values\">docs</a> for more details",
             "step": 1,
             "optional": true,
             "additionalParams": true,
-            "id": "chatGoogleVertexAI_0-input-topK-number"
+            "id": "chatOllama_0-input-topK-number"
+          },
+          {
+            "label": "Mirostat",
+            "name": "mirostat",
+            "type": "number",
+            "description": "Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0). Refer to <a target=\"_blank\" href=\"https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values\">docs</a> for more details",
+            "step": 1,
+            "optional": true,
+            "additionalParams": true,
+            "id": "chatOllama_0-input-mirostat-number"
+          },
+          {
+            "label": "Mirostat ETA",
+            "name": "mirostatEta",
+            "type": "number",
+            "description": "Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. (Default: 0.1) Refer to <a target=\"_blank\" href=\"https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values\">docs</a> for more details",
+            "step": 0.1,
+            "optional": true,
+            "additionalParams": true,
+            "id": "chatOllama_0-input-mirostatEta-number"
+          },
+          {
+            "label": "Mirostat TAU",
+            "name": "mirostatTau",
+            "type": "number",
+            "description": "Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. (Default: 5.0) Refer to <a target=\"_blank\" href=\"https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values\">docs</a> for more details",
+            "step": 0.1,
+            "optional": true,
+            "additionalParams": true,
+            "id": "chatOllama_0-input-mirostatTau-number"
+          },
+          {
+            "label": "Context Window Size",
+            "name": "numCtx",
+            "type": "number",
+            "description": "Sets the size of the context window used to generate the next token. (Default: 2048) Refer to <a target=\"_blank\" href=\"https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values\">docs</a> for more details",
+            "step": 1,
+            "optional": true,
+            "additionalParams": true,
+            "id": "chatOllama_0-input-numCtx-number"
+          },
+          {
+            "label": "Number of GPU",
+            "name": "numGpu",
+            "type": "number",
+            "description": "The number of layers to send to the GPU(s). On macOS it defaults to 1 to enable metal support, 0 to disable. Refer to <a target=\"_blank\" href=\"https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values\">docs</a> for more details",
+            "step": 1,
+            "optional": true,
+            "additionalParams": true,
+            "id": "chatOllama_0-input-numGpu-number"
+          },
+          {
+            "label": "Number of Thread",
+            "name": "numThread",
+            "type": "number",
+            "description": "Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores). Refer to <a target=\"_blank\" href=\"https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values\">docs</a> for more details",
+            "step": 1,
+            "optional": true,
+            "additionalParams": true,
+            "id": "chatOllama_0-input-numThread-number"
+          },
+          {
+            "label": "Repeat Last N",
+            "name": "repeatLastN",
+            "type": "number",
+            "description": "Sets how far back for the model to look back to prevent repetition. (Default: 64, 0 = disabled, -1 = num_ctx). Refer to <a target=\"_blank\" href=\"https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values\">docs</a> for more details",
+            "step": 1,
+            "optional": true,
+            "additionalParams": true,
+            "id": "chatOllama_0-input-repeatLastN-number"
+          },
+          {
+            "label": "Repeat Penalty",
+            "name": "repeatPenalty",
+            "type": "number",
+            "description": "Sets how strongly to penalize repetitions. A higher value (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g., 0.9) will be more lenient. (Default: 1.1). Refer to <a target=\"_blank\" href=\"https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values\">docs</a> for more details",
+            "step": 0.1,
+            "optional": true,
+            "additionalParams": true,
+            "id": "chatOllama_0-input-repeatPenalty-number"
+          },
+          {
+            "label": "Stop Sequence",
+            "name": "stop",
+            "type": "string",
+            "rows": 4,
+            "placeholder": "AI assistant:",
+            "description": "Sets the stop sequences to use. Use comma to seperate different sequences. Refer to <a target=\"_blank\" href=\"https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values\">docs</a> for more details",
+            "optional": true,
+            "additionalParams": true,
+            "id": "chatOllama_0-input-stop-string"
+          },
+          {
+            "label": "Tail Free Sampling",
+            "name": "tfsZ",
+            "type": "number",
+            "description": "Tail free sampling is used to reduce the impact of less probable tokens from the output. A higher value (e.g., 2.0) will reduce the impact more, while a value of 1.0 disables this setting. (Default: 1). Refer to <a target=\"_blank\" href=\"https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values\">docs</a> for more details",
+            "step": 0.1,
+            "optional": true,
+            "additionalParams": true,
+            "id": "chatOllama_0-input-tfsZ-number"
           }
         ],
         "inputAnchors": [
@@ -417,38 +515,49 @@
             "name": "cache",
             "type": "BaseCache",
             "optional": true,
-            "id": "chatGoogleVertexAI_0-input-cache-BaseCache"
+            "id": "chatOllama_0-input-cache-BaseCache"
           }
         ],
         "inputs": {
           "cache": "",
-          "modelName": "",
-          "customModelName": "gemini-2.5-pro-preview-03-25",
-          "temperature": "0.9",
+          "baseUrl": "http://ollama:11434",
+          "modelName": "llama3.2",
+          "temperature": 0.9,
           "allowImageUploads": "",
           "streaming": true,
-          "maxOutputTokens": "64000",
+          "jsonMode": "",
+          "keepAlive": "5m",
           "topP": "",
-          "topK": ""
+          "topK": "",
+          "mirostat": "",
+          "mirostatEta": "",
+          "mirostatTau": "",
+          "numCtx": "",
+          "numGpu": "",
+          "numThread": "",
+          "repeatLastN": "",
+          "repeatPenalty": "",
+          "stop": "",
+          "tfsZ": ""
         },
         "outputAnchors": [
           {
-            "id": "chatGoogleVertexAI_0-output-chatGoogleVertexAI-ChatGoogleVertexAI|ChatVertexAI|ChatGoogle|ChatGoogleBase|BaseChatModel|BaseLanguageModel|Runnable",
-            "name": "chatGoogleVertexAI",
-            "label": "ChatGoogleVertexAI",
-            "description": "Wrapper around VertexAI large language models that use the Chat endpoint",
-            "type": "ChatGoogleVertexAI | ChatVertexAI | ChatGoogle | ChatGoogleBase | BaseChatModel | BaseLanguageModel | Runnable"
+            "id": "chatOllama_0-output-chatOllama-ChatOllama|ChatOllama|BaseChatModel|BaseLanguageModel|Runnable",
+            "name": "chatOllama",
+            "label": "ChatOllama",
+            "description": "Chat completion using open-source LLM on Ollama",
+            "type": "ChatOllama | ChatOllama | BaseChatModel | BaseLanguageModel | Runnable"
           }
         ],
         "outputs": {},
         "selected": false
       },
       "width": 300,
-      "height": 670,
+      "height": 676,
       "selected": false,
       "positionAbsolute": {
-        "x": 86.92950964698997,
-        "y": 81.44327834393293
+        "x": 107.23045826983534,
+        "y": 24.085814730611787
       },
       "dragging": false
     }
@@ -471,12 +580,12 @@
       "id": "supervisor_0-supervisor_0-output-supervisor-Supervisor-worker_0-worker_0-input-supervisor-Supervisor"
     },
     {
-      "source": "chatGoogleVertexAI_0",
-      "sourceHandle": "chatGoogleVertexAI_0-output-chatGoogleVertexAI-ChatGoogleVertexAI|ChatVertexAI|ChatGoogle|ChatGoogleBase|BaseChatModel|BaseLanguageModel|Runnable",
+      "source": "chatOllama_0",
+      "sourceHandle": "chatOllama_0-output-chatOllama-ChatOllama|ChatOllama|BaseChatModel|BaseLanguageModel|Runnable",
       "target": "supervisor_0",
       "targetHandle": "supervisor_0-input-model-BaseChatModel",
       "type": "buttonedge",
-      "id": "chatGoogleVertexAI_0-chatGoogleVertexAI_0-output-chatGoogleVertexAI-ChatGoogleVertexAI|ChatVertexAI|ChatGoogle|ChatGoogleBase|BaseChatModel|BaseLanguageModel|Runnable-supervisor_0-supervisor_0-input-model-BaseChatModel"
+      "id": "chatOllama_0-chatOllama_0-output-chatOllama-ChatOllama|ChatOllama|BaseChatModel|BaseLanguageModel|Runnable-supervisor_0-supervisor_0-input-model-BaseChatModel"
     }
   ]
 }

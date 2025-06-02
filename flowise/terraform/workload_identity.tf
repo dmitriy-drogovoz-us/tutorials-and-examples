@@ -28,7 +28,6 @@ module "workload_identity" {
   namespace   = var.kubernetes_namespace
   roles = [
     "roles/storage.objectUser",
-    "roles/aiplatform.user"
   ]
   automount_service_account_token = true
   project_id                      = var.project_id

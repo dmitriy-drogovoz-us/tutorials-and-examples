@@ -32,3 +32,6 @@ kubernetes_namespace = "default"
 
 iam_service_account_name = "" # Leave empty to use the default name
 k8s_service_account_name = "" # Leave empty to use the default name
+
+bucket_name = "" # Leave empty to use the default name
+

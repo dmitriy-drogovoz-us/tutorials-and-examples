@@ -98,3 +98,8 @@ variable "iam_service_account_name" {
 variable "k8s_service_account_name" {
   type = string
 }
+
+
+variable "bucket_name" {
+  type = string
+}

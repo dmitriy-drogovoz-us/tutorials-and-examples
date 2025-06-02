@@ -48,3 +48,7 @@ output "cloudsql_database_name" {
 output "k8s_service_account_name" {
   value = local.k8s_service_account_name
 }
+
+output "bucket_name" {
+  value = local.bucket_name
+}
