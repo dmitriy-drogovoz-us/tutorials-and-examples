@@ -27,7 +27,7 @@ subnetwork_cidr   = "10.128.0.0/20"
 
 kubernetes_namespace     = "default"
 
-image_repository_name = "llama-ray-mcp"
+image_repository_name = "llama-ray"
 
 
 iam_service_account_name = "adk-ray-agent-sa"

@@ -17,7 +17,7 @@ spec:
       serviceAccount: adk-ray-agent-sa
       containers:
       - name: weather-mcp-server
-        image: us-docker.pkg.dev/<PROJECT_ID>/llama-ray-mcp/mcp-server:latest
+        image: us-docker.pkg.dev/<PROJECT_ID>/llama-ray/mcp-server:latest
         ports:
         - name: http-mcp
           containerPort: 50051
