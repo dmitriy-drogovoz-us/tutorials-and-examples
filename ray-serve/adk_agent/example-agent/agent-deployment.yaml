@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adk-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: adk-agent
+  template:
+    metadata:
+      labels:
+        app: adk-agent
+    spec:
+      serviceAccount: adk-ray-agent-sa
+      containers:
+      - name: adk-agent
+        image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/adk-agent:latest
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: 2
+            ephemeral-storage: 3Gi
+          requests:
+            memory: 1Gi
+            cpu: 2
+            ephemeral-storage: 3Gi
+        ports:
+        - containerPort: 8080
+        env:
+          - name: PORT
+            value: '8080'
+          - name: GOOGLE_GENAI_USE_VERTEXAI
+            value: 'False'
+          - name: GOOGLE_CLOUD_PROJECT
+            value: <PROJECT-ID>
+          - name: GOOGLE_CLOUD_LOCATION
+            value: <REGION>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: adk-agent
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    app: adk-agent

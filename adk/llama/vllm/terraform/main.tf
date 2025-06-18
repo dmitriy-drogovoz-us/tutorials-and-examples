@@ -1,4 +1,4 @@
-# Copyright 2025 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ module "project-services" {
     "pubsub.googleapis.com",
     "servicenetworking.googleapis.com",
     "serviceusage.googleapis.com",
+    "sourcerepo.googleapis.com",
     "iap.googleapis.com"
   ])
 }
@@ -61,20 +62,19 @@ module "infra" {
   source = "github.com/ai-on-gke/common-infra//common/infrastructure?ref=main"
   count  = var.create_cluster ? 1 : 0
 
-  project_id         = var.project_id
-  cluster_name       = local.cluster_name
-  cluster_location   = var.cluster_location
-  autopilot_cluster  = var.autopilot_cluster
-  private_cluster    = var.private_cluster
-  create_network     = false
-  network_name       = "default"
-  subnetwork_name    = "default"
-  cpu_pools          = var.cpu_pools
-  enable_gpu         = var.enable_gpu
-  gpu_pools          = var.gpu_pools
-  ray_addon_enabled  = true
-  depends_on         = [module.project-services]
-  kubernetes_version = var.kubernetes_version
+  project_id        = var.project_id
+  cluster_name      = local.cluster_name
+  cluster_location  = var.cluster_location
+  autopilot_cluster = var.autopilot_cluster
+  private_cluster   = var.private_cluster
+  create_network    = false
+  network_name      = "default"
+  subnetwork_name   = "default"
+  cpu_pools         = var.cpu_pools
+  enable_gpu        = var.enable_gpu
+  gpu_pools         = var.gpu_pools
+  ray_addon_enabled = true
+  depends_on        = [module.project-services]
 }
 
 data "google_container_cluster" "default" {
@@ -82,10 +82,6 @@ data "google_container_cluster" "default" {
   name       = var.cluster_name
   location   = var.cluster_location
   depends_on = [module.project-services]
-}
-
-data "google_service_account" "gke_service_account" {
-  account_id = module.infra[0].service_account
 }
 
 locals {
@@ -101,31 +97,19 @@ locals {
   cluster_name                      = var.goog_cm_deployment_name != "" ? "${var.goog_cm_deployment_name}-${var.cluster_name}" : var.cluster_name
 }
 
-module "gcs" {
-  source      = "github.com/ai-on-gke/common-infra//common/modules/gcs?ref=main"
-  count       = var.create_gcs_bucket ? 1 : 0
-  project_id  = var.project_id
-  bucket_name = var.gcs_bucket
+resource "google_artifact_registry_repository" "image_repo" {
+  location      = var.artifact_registry_location
+  repository_id = var.artifact_registry_name
+  format        = "DOCKER"
 }
 
-resource "google_storage_bucket_iam_binding" "allow_gke_to_bucket" {
-  bucket = var.gcs_bucket
-  role   = "roles/storage.admin"
+resource "google_artifact_registry_repository_iam_binding" "registry_binding_reader" {
+  project    = var.project_id
+  location   = google_artifact_registry_repository.image_repo.location
+  repository = google_artifact_registry_repository.image_repo.repository_id
+  role       = "roles/artifactregistry.reader"
   members = [
-    data.google_service_account.gke_service_account.member,
+    "serviceAccount:${module.infra[0].service_account}",
   ]
-}
-
-module "skypilot-workload-identity" {
-  source              = "terraform-google-modules/kubernetes-engine/google//modules/workload-identity"
-  name                = "skypilot-service-account"
-  namespace           = "default"
-  project_id          = var.project_id
-  roles               = ["roles/storage.admin", "roles/compute.admin"]
-  cluster_name        = module.infra[0].cluster_name
-  location            = var.cluster_location
-  use_existing_gcp_sa = true
-  gcp_sa_name         = data.google_service_account.gke_service_account.email
-  use_existing_k8s_sa = true
-  annotate_k8s_sa     = false
+  depends_on = [google_artifact_registry_repository.image_repo, module.infra]
 }

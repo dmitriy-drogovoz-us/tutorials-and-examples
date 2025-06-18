@@ -36,36 +36,8 @@ locals {
   cluster_name = var.cluster_name != "" ? var.cluster_name : var.default_resource_name
 }
 
-module "project-services" {
-  source  = "terraform-google-modules/project-factory/google//modules/project_services"
-  version = "~> 14.5"
-
-  project_id                  = var.project_id
-  disable_services_on_destroy = false
-  disable_dependent_services  = false
-  activate_apis = flatten([
-    "autoscaling.googleapis.com",
-    "cloudbuild.googleapis.com",
-    "cloudresourcemanager.googleapis.com",
-    "compute.googleapis.com",
-    "config.googleapis.com",
-    "connectgateway.googleapis.com",
-    "container.googleapis.com",
-    "containerfilesystem.googleapis.com",
-    "dns.googleapis.com",
-    "gkehub.googleapis.com",
-    "iamcredentials.googleapis.com",
-    "logging.googleapis.com",
-    "monitoring.googleapis.com",
-    "pubsub.googleapis.com",
-    "servicenetworking.googleapis.com",
-    "serviceusage.googleapis.com",
-    "iap.googleapis.com"
-  ])
-}
-
 module "gke_cluster" {
-  source            = "github.com/ai-on-gke/common-infra//common/infrastructure?ref=main"
+  source            = "github.com/ai-on-gke/common-infra/common/infrastructure?ref=main"
   project_id        = var.project_id
   cluster_name      = local.cluster_name
   cluster_location  = var.cluster_location
@@ -76,24 +48,6 @@ module "gke_cluster" {
   subnetwork_name   = local.subnetwork_name
   subnetwork_region = var.subnetwork_region
   subnetwork_cidr   = var.subnetwork_cidr
-  enable_gpu        = true
-  gpu_pools = [
-    {
-      name               = "gpu-pool-l4"
-      machine_type       = "g2-standard-24"
-      node_locations     = "us-central1-a"
-      autoscaling        = true
-      min_count          = 1
-      max_count          = 3
-      disk_size_gb       = 100
-      disk_type          = "pd-balanced"
-      enable_gcfs        = true
-      logging_variant    = "DEFAULT"
-      accelerator_count  = 1
-      accelerator_type   = "nvidia-l4"
-      gpu_driver_version = "DEFAULT"
-    }
-  ]
   ray_addon_enabled = false
   depends_on        = [module.custom_network]
 }
@@ -105,27 +59,10 @@ locals {
 }
 
 provider "kubernetes" {
-  alias                  = "metaflow"
+  alias                  = "flowise"
   host                   = local.host
   token                  = data.google_client_config.default.access_token
   cluster_ca_certificate = var.private_cluster ? "" : base64decode(module.gke_cluster.ca_certificate)
-
-  dynamic "exec" {
-    for_each = var.private_cluster ? [1] : []
-    content {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      command     = "gke-gcloud-auth-plugin"
-    }
-  }
-}
-
-provider "kubectl" {
-  alias                  = "metaflow"
-  apply_retry_count      = 1
-  host                   = local.host
-  token                  = data.google_client_config.default.access_token
-  cluster_ca_certificate = var.private_cluster ? "" : base64decode(module.gke_cluster.ca_certificate)
-  load_config_file       = false
 
   dynamic "exec" {
     for_each = var.private_cluster ? [1] : []

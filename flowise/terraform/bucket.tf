@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-terraform {
-  required_providers {
-    google = {
-      source = "hashicorp/google"
-    }
-  }
+
+locals {
+  bucket_name = var.bucket_name != "" ? var.bucket_name : var.default_resource_name
+}
+
+
+resource "google_storage_bucket" "bucket" {
+  project = var.project_id
+  name    = local.bucket_name
+
+  location      = "US"
+  storage_class = "STANDARD"
+
+  uniform_bucket_level_access = true
+  force_destroy               = true
 }

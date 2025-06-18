@@ -29,7 +29,8 @@ module "custom_network" {
       subnet_ip             = var.subnetwork_cidr
       subnet_region         = var.subnetwork_region
       subnet_private_access = var.subnetwork_private_access
-      description           = var.subnetwork_description
+      description           = "Network for Google ADK tutorial"
     }
   ]
+  depends_on = [google_project_service.cloudresourcemanager]
 }
