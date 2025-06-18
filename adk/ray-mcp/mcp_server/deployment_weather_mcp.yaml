@@ -18,6 +18,14 @@ spec:
       containers:
       - name: weather-mcp-server
         image: us-docker.pkg.dev/<PROJECT_ID>/llama-ray/mcp-server:latest
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 999
         ports:
         - name: http-mcp
           containerPort: 50051

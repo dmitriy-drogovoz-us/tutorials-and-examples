@@ -16,6 +16,14 @@ spec:
       containers:
       - name: adk-agent
         image: us-docker.pkg.dev/<PROJECT_ID>/llama-ray/adk-agent:latest
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
         resources:
           requests:
             memory: 512Mi
@@ -38,6 +46,13 @@ spec:
             value: 'weather-mcp-server'
           - name: WEATHER_SERVER_PORT
             value: '8080'
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+      volumes:
+      - name: tmp-volume
+        emptyDir:
+          medium: Memory
 ---
 apiVersion: v1
 kind: Service

@@ -1,10 +1,10 @@
 FROM python:3.13-slim
 WORKDIR /app
 
+RUN adduser --uid 1001 --disabled-password --gecos "" myuser
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-RUN adduser --disabled-password --gecos "" myuser
 
 COPY main.py .
 COPY weather_agent ./weather_agent
