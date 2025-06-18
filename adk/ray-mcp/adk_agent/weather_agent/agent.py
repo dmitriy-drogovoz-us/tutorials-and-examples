@@ -11,8 +11,9 @@ logger = logging.getLogger(__name__)
 
 # Ray Serve config
 RAY_SERVICE_NAME = os.getenv("RAY_SERVICE_NAME", "llama-31-8b-serve-svc")
+RAY_SERVICE_NAMESPACE = os.getenv("RAY_SERVICE_NAMESPACE", "default")
 RAY_SERVE_PORT = int(os.getenv("RAY_SERVE_PORT", 8000))
-api_base_url = f"http://{RAY_SERVICE_NAME}:{RAY_SERVE_PORT}/v1"
+api_base_url = f"http://{RAY_SERVICE_NAME}.{RAY_SERVICE_NAMESPACE}.svc.cluster.local:{RAY_SERVE_PORT}/v1"
 logger.debug(f"Connecting to LLM at: {api_base_url}")
 
 # MCP Toolset Configuration
