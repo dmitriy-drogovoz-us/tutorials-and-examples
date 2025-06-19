@@ -1,11 +1,10 @@
 import os
 import logging
-from typing import List, Dict
+from typing import Dict
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-import re
 
 from llama_index.core import VectorStoreIndex
 from llama_index.vector_stores.redis import RedisVectorStore
@@ -76,7 +75,16 @@ query_engine = index.as_query_engine(
 rag_tool = QueryEngineTool.from_defaults(
     query_engine,
     name="movie_recommendation_tool",
-    description="Use this tool to recommend movies based on user queries, providing title, IMDb rating, overview, genre, year, director, and stars."
+    description="Use this tool only for queries related to movie recommendations, such as asking for movies by genre, director, or description."
+)
+
+# System prompt for the agent
+AGENT_SYSTEM_PROMPT = (
+    "You are a movie recommendation assistant. Your purpose is to assist users with movie recommendations based on their queries. "
+    "You have access to a tool called 'movie_recommendation_tool' that provides movie recommendations when the user explicitly asks for them (e.g., by genre, director, or description). "
+    "Only use this tool if the query is clearly related to movies or requesting movie recommendations. "
+    "For any other type of query (e.g., weather, news, or general information), do not use the tool and instead respond directly with: "
+    "'I can only assist with movie recommendations. Please ask about movies.'"
 )
 
 # Custom agent
@@ -84,60 +92,47 @@ class MovieRecommendationAgent(ReActAgent):
     def chat(self, message: str) -> Dict:
         try:
             logger.info(f"Processing query: {message}")
-            response = query_engine.query(message)
-            logger.info(f"Raw LLM response: {response.response}")
+            # Letting the agent handle the query
+            response = super().chat(message)
+            logger.info(f"Agent response: {response.response}, sources: {response.sources}")
             
-            if not response.source_nodes:
-                logger.warning("No source nodes found for query")
+            # If no tools were used, return the agent's direct response
+            if not response.sources:
+                logger.info("No tools used; returning agent's direct response")
                 return {
+                    "message": response.response if response.response else "I can only assist with movie recommendations. Please ask about movies.",
+                    "recommendations": []
+                }
+            
+            # Extract recommendations from tool output
+            recommendations = []
+            for tool_output in response.sources:
+                if tool_output.tool_name == "movie_recommendation_tool":
+                    query_response = tool_output.raw_output  # QueryResponse from query engine
+                    for node in query_response.source_nodes:
+                        metadata = node.node.metadata
+                        recommendations.append({
+                            "title": metadata["series_title"],
+                            "imdb_rating": metadata["imdb_rating"],
+                            "overview": metadata["overview"],
+                            "genre": metadata["genre"],
+                            "released_year": metadata["released_year"],
+                            "director": metadata["director"],
+                            "stars": metadata["stars"]
+                        })
+            
+            # Construct final response based on tool output
+            if recommendations:
+                result = {
+                    "message": "Here are the top movie recommendations:",
+                    "recommendations": recommendations[:3]
+                }
+            else:
+                result = {
                     "message": "No relevant movies found for your query. Please try a more specific movie-related query.",
                     "recommendations": []
                 }
             
-            # Parse LLM response with flexible regex
-            recommendations = []
-            movie_blocks = re.finditer(
-                r"\*\*(?:\d+\.\s*)?(.+?)\s*\((\d{4})\)\s*\**\n"  # Title and year
-                r"(?:.*?\n)*?"  # Optional lines
-                r"\*\s+\*\*IMDb Rating:\*\*\s*([\d.]+)(?:/10)?\n"  # Rating (with or without /10)
-                r"\*\s+\*\*Overview:\*\*\s*(.+?)\n"  # Overview
-                r"\*\s+\*\*Genre:\*\*\s*(.+?)\n"  # Genre
-                r"(?:.*?\n)*?"  # Optional lines
-                r"\*\s+\*\*Director:\*\*\s*(.+?)\n"  # Director
-                r"\*\s+\*\*Stars:\*\*\s*(.+?)(?=\n(?:\n|\Z|\*))",  # Stars until double newline or end
-                str(response.response),
-                re.DOTALL
-            )
-            for block in movie_blocks:
-                recommendations.append({
-                    "title": block.group(1).strip(),
-                    "imdb_rating": float(block.group(3)),
-                    "overview": block.group(4).strip(),
-                    "genre": block.group(5).strip(),
-                    "released_year": block.group(2),
-                    "director": block.group(6).strip(),
-                    "stars": block.group(7).strip()
-                })
-            
-            if not recommendations:
-                logger.warning("No recommendations parsed from LLM response")
-                for node in response.source_nodes:
-                    metadata = node.node.metadata
-                    logger.info(f"Node metadata: {metadata}")
-                    recommendations.append({
-                        "title": metadata["series_title"],
-                        "imdb_rating": metadata["imdb_rating"],
-                        "overview": metadata["overview"],
-                        "genre": metadata["genre"],
-                        "released_year": metadata["released_year"],
-                        "director": metadata["director"],
-                        "stars": metadata["stars"]
-                    })
-            
-            result = {
-                "message": "Here are the top movie recommendations:",
-                "recommendations": recommendations[:3]
-            }
             logger.info(f"Final response: {result}")
             return result
         except Exception as e:
@@ -147,12 +142,13 @@ class MovieRecommendationAgent(ReActAgent):
                 "recommendations": []
             }
 
-# Initialize agent
+# Initialize agent with custom system prompt
 agent = MovieRecommendationAgent.from_tools(
     tools=[rag_tool],
     llm=llm,
     verbose=True,
-    max_iterations=1
+    max_iterations=25,
+    system_prompt=AGENT_SYSTEM_PROMPT
 )
 
 def get_agent():
