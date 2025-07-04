@@ -89,15 +89,15 @@ steps:
     pod_name=$(kubectl get pods -l app=llama3-server -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
 
     sleep_seconds=10
-    SEARCH_STRING="Application startup complete."
+    search_string="Application startup complete."
     pod_name=$(kubectl get pods -l app=llama3-server -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
     while true; do
       echo "  Streaming logs from pod '$pod_name' (tailing last 100 lines)..."
-      if kubectl logs "$pod_name" --tail=100 | grep -q -m 1 "$SEARCH_STRING"; then
-        echo "SUCCESS: String '$SEARCH_STRING' found in logs!"
+      if kubectl logs "$pod_name" --tail=100 | grep -q -m 1 "$search_string"; then
+        echo "SUCCESS: String '$search_string' found in logs!"
         break # Exit the loop as the string is found
       else
-        echo "  String '$SEARCH_STRING' not yet found. Sleep $sleep_seconds seconds."
+        echo "  String '$search_string' not yet found. Sleep $sleep_seconds seconds."
         sleep ${sleep_seconds}s
       fi
     done
