@@ -67,6 +67,7 @@ steps:
 - id: "adk-llama-vllm: test guide"
   name: "gcr.io/cloud-builders/kubectl"
   dir: "/workspace/adk/llama/vllm"
+  secretEnv: ["HF_TOKEN"]
   env:
     - "CLOUDSDK_COMPUTE_ZONE=${_REGION}"
     - "CLOUDSDK_CONTAINER_CLUSTER=ml-${_BUILD_ID}-cluster"
@@ -103,7 +104,7 @@ steps:
 
     kubectl port-forward svc/vllm-llama3-service 8000:8000 &
     CITY="Ottawa"
-    if bash test_model.sh | grep -q -m 1 "$CITY"; then
+    if bash ../tests/test_model.sh | grep -q -m 1 "$CITY"; then
       echo "SUCCESS: String '$CITY' found."
     else
       echo "ERROR: $CITY not found."
