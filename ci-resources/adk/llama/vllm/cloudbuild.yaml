@@ -46,7 +46,7 @@ steps:
     -var=project_id=$PROJECT_ID \
     -var=cluster_name=ml-adk-llama-vllm-$_BUILD_ID-cluster \
     -var=cluster_location=$_ADK_LLAMA_VLLM_REGION \
-    -var=artifact_registry_name=$ml-adk-llama-vllm-$_BUILD_ID \
+    -var=artifact_registry_name=ml-adk-llama-vllm-$_BUILD_ID \
     -auto-approve -no-color
     echo "pass" > /workspace/adk_llama_vllm_gke_cluster_result.txt
   allowFailure: true
@@ -96,7 +96,7 @@ steps:
     -var=project_id=$PROJECT_ID \
     -var=cluster_name=ml-adk-llama-vllm-$_BUILD_ID-cluster \
     -var=cluster_location=$_ADK_LLAMA_VLLM_REGION \
-    -var=artifact_registry_name=$ml-adk-llama-vllm-$_BUILD_ID \
+    -var=artifact_registry_name=ml-adk-llama-vllm-$_BUILD_ID \
     -auto-approve -no-color
     echo "pass" > /workspace/adk_llama_vllm_cleanup_gke_cluster.txt
   allowFailure: true
