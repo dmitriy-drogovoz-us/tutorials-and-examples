@@ -66,7 +66,7 @@ steps:
 
 - id: "adk-llama-vllm: test guide"
   name: "gcr.io/cloud-builders/kubectl"
-  dir: "/workspace/adk/llama/vllm/terraform"
+  dir: "/workspace/adk/llama/vllm"
   env:
     - "CLOUDSDK_COMPUTE_ZONE=${_REGION}"
     - "CLOUDSDK_CONTAINER_CLUSTER=ml-${_BUILD_ID}-cluster"
@@ -76,6 +76,45 @@ steps:
   - |
     set -e
     echo "fail" > /workspace/adk_llama_vllm_test_guide.txt
+
+    kubectl create secret generic hf-token-secret \
+        --from-literal=token=${HF_TOKEN} \
+        --dry-run=client -o yaml | kubectl apply -f -
+
+    cd deploy-llm
+    kubectl apply -f deploy-llm.yaml
+    kubectl rollout status deployment/vllm-llama3-deployment
+
+    POD_NAME=$(kubectl get pods -l app=llama3-server -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+
+    SLEEP_SECONDS=10
+    SEARCH_STRING="Application startup complete."
+    POD_NAME=$(kubectl get pods -l app=llama3-server -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+    while true; do
+      echo "  Streaming logs from pod '$POD_NAME' (tailing last 100 lines)..."
+      if kubectl logs "$POD_NAME" --tail=100 | grep -q -m 1 "$SEARCH_STRING"; then
+        echo "SUCCESS: String '$SEARCH_STRING' found in logs!"
+        break # Exit the loop as the string is found
+      else
+        echo "  String '$SEARCH_STRING' not yet found. Sleep $SLEEP_SECONDS seconds."
+        sleep ${SLEEP_SECONDS}s
+      fi
+    done
+
+    kubectl port-forward svc/vllm-llama3-service 8000:8000 &
+    CITY="Ottawa"
+    if bash test_model.sh | grep -q -m 1 "$CITY"; then
+      echo "SUCCESS: String '$CITY' found."
+    else
+      echo "ERROR: $CITY not found."
+      exit 1
+    fi
+
+    cd ../deploy-agent
+    gcloud builds submit \
+        --tag us-central1-docker.pkg.dev/$PROJECT_ID/ml-adk-llama-vllm-$_BUILD_ID/adk-agent:latest \
+        --project=$PROJECT_ID \
+        .
 
     echo "pass" > /workspace/adk_llama_vllm_test_guide.txt
   allowFailure: true
@@ -144,3 +183,7 @@ options:
   substitutionOption: "ALLOW_LOOSE"
   machineType: "E2_HIGHCPU_8"
 timeout: 5400s
+availableSecrets:
+  secretManager:
+  - versionName: projects/ai-on-gke-qss/secrets/cloudbuild-hf-token/versions/latest
+    env: "HF_TOKEN"
