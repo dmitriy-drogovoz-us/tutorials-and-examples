@@ -86,28 +86,28 @@ steps:
     kubectl apply -f deploy-llm.yaml
     kubectl rollout status deployment/vllm-llama3-deployment
 
-    POD_NAME=$(kubectl get pods -l app=llama3-server -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+    pod_name=$(kubectl get pods -l app=llama3-server -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
 
-    SLEEP_SECONDS=10
+    sleep_seconds=10
     SEARCH_STRING="Application startup complete."
-    POD_NAME=$(kubectl get pods -l app=llama3-server -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+    pod_name=$(kubectl get pods -l app=llama3-server -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
     while true; do
-      echo "  Streaming logs from pod '$POD_NAME' (tailing last 100 lines)..."
-      if kubectl logs "$POD_NAME" --tail=100 | grep -q -m 1 "$SEARCH_STRING"; then
+      echo "  Streaming logs from pod '$pod_name' (tailing last 100 lines)..."
+      if kubectl logs "$pod_name" --tail=100 | grep -q -m 1 "$SEARCH_STRING"; then
         echo "SUCCESS: String '$SEARCH_STRING' found in logs!"
         break # Exit the loop as the string is found
       else
-        echo "  String '$SEARCH_STRING' not yet found. Sleep $SLEEP_SECONDS seconds."
-        sleep ${SLEEP_SECONDS}s
+        echo "  String '$SEARCH_STRING' not yet found. Sleep $sleep_seconds seconds."
+        sleep ${sleep_seconds}s
       fi
     done
 
     kubectl port-forward svc/vllm-llama3-service 8000:8000 &
-    CITY="Ottawa"
-    if bash ../tests/test_model.sh | grep -q -m 1 "$CITY"; then
-      echo "SUCCESS: String '$CITY' found."
+    city="Ottawa"
+    if bash ../tests/test_model.sh | grep -q -m 1 "$city"; then
+      echo "SUCCESS: String '$city' found."
     else
-      echo "ERROR: $CITY not found."
+      echo "ERROR: $city not found."
       exit 1
     fi
 
