@@ -1,0 +1,203 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+steps:
+- id: "adk-llama-vllm: prepare tests"
+  name: "gcr.io/cloud-builders/gcloud"
+  entrypoint: "bash"
+  args:
+    - '-c'
+    - |
+      cp -r /workspace/ci-resources/adk/llama/vllm/tests /workspace/adk/llama/vllm/tests
+
+- id: "adk-llama-vllm: validate platform"
+  name: "hashicorp/terraform:latest"
+  dir: "/workspace/adk/llama/vllm/terraform"
+  script: |
+    terraform init -no-color
+    terraform validate -no-color
+  waitFor: ["adk-llama-vllm: prepare tests"]
+
+- id: 'adk-llama-vllm: create gke cluster'
+  name: "hashicorp/terraform:latest"
+  dir: "/workspace/adk/llama/vllm/terraform"
+  env:
+  - "KUBE_LOAD_CONFIG_FILE=false"
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+
+    echo "fail" > /workspace/adk_llama_vllm_gke_cluster_result.txt
+    terraform apply \
+    -var-file=example_vars.tfvars \
+    -var=project_id=$PROJECT_ID \
+    -var=cluster_name=ml-adk-llama-vllm-$_BUILD_ID-cluster \
+    -var=cluster_location=$_ADK_LLAMA_VLLM_REGION \
+    -var=artifact_registry_name=ml-adk-llama-vllm-$_BUILD_ID \
+    -auto-approve -no-color
+    echo "pass" > /workspace/adk_llama_vllm_gke_cluster_result.txt
+  allowFailure: true
+  waitFor: ['adk-llama-vllm: validate platform']
+
+- id: 'adk-llama-vllm: generate kubeconfig'
+  name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - 'container'
+  - 'clusters'
+  - 'get-credentials'
+  - 'ml-adk-llama-vllm-${_BUILD_ID}-cluster'
+  - '--region=${_ADK_LLAMA_VLLM_REGION}'
+  - '--project=${PROJECT_ID}'
+  allowFailure: true
+  waitFor: ['adk-llama-vllm: create gke cluster']
+
+- id: "adk-llama-vllm: test guide"
+  name: "gcr.io/cloud-builders/kubectl"
+  dir: "/workspace/adk/llama/vllm"
+  secretEnv: ["HF_TOKEN"]
+  env:
+    - "CLOUDSDK_COMPUTE_ZONE=${_REGION}"
+    - "CLOUDSDK_CONTAINER_CLUSTER=ml-${_BUILD_ID}-cluster"
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+    echo "fail" > /workspace/adk_llama_vllm_test_guide.txt
+
+    kubectl create secret generic hf-token-secret \
+        --from-literal=token=$$HF_TOKEN \
+        --dry-run=client -o yaml | kubectl apply -f -
+
+    cd deploy-llm
+    kubectl apply -f deploy-llm.yaml
+    kubectl rollout status deployment/vllm-llama3-deployment
+
+    pod_name=$(kubectl get pods -l app=llama3-server -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+
+    sleep_seconds=10
+    search_string="Application startup complete."
+    pod_name=$(kubectl get pods -l app=llama3-server -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+    while true; do
+      echo "  Streaming logs from pod '$pod_name' (tailing last 100 lines)..."
+      if kubectl logs "$pod_name" --tail=100 | grep -q -m 1 "$search_string"; then
+        echo "SUCCESS: String '$search_string' found in logs!"
+        break # Exit the loop as the string is found
+      else
+        echo "  String '$search_string' not yet found. Sleep $sleep_seconds seconds."
+        sleep ${sleep_seconds}s
+      fi
+    done
+
+    kubectl port-forward svc/vllm-llama3-service 8000:8000 &
+    sleep 5s
+    city="Ottawa"
+    if bash ../tests/test_model.sh | grep -q -m 1 "$city"; then
+      echo "SUCCESS: String '$city' found."
+    else
+      echo "ERROR: $city not found."
+      exit 1
+    fi
+
+    cd ../deploy-agent
+    gcloud builds submit \
+        --tag us-central1-docker.pkg.dev/$PROJECT_ID/ml-adk-llama-vllm-$_BUILD_ID/adk-agent:latest \
+        --project=$PROJECT_ID \
+        .
+    sed -i "s|image: us-central1-docker.pkg.dev/<PROJECT_ID>/adk-repo/adk-agent:latest|image: us-central1-docker.pkg.dev/${PROJECT_ID}/ml-adk-llama-vllm-${_BUILD_ID}/adk-agent:latest|g" deploy-agent.yaml
+    kubectl apply -f deploy-agent.yaml
+    sleep 5s
+    kubectl rollout status deployment/adk-agent
+    kubectl port-forward svc/adk-agent 8001:80 &
+    sleep 5s
+
+    apt update
+    apt install python3-venv --assume-yes
+    apt install python3-pip --assume-yes
+    pip install requests
+    python3 /workspace/adk/llama/vllm/tests/test.py http://127.0.0.1:8001
+
+    echo "pass" > /workspace/adk_llama_vllm_test_guide.txt
+  allowFailure: true
+  waitFor: ['adk-llama-vllm: generate kubeconfig']
+
+- id: 'adk-llama-vllm: cleanup gke cluster'
+  name: "hashicorp/terraform:latest"
+  dir: "/workspace/adk/llama/vllm/terraform"
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+
+    echo "fail" > /workspace/adk_llama_vllm_cleanup_gke_cluster.txt
+    terraform destroy \
+    -var-file=example_vars.tfvars \
+    -var=project_id=$PROJECT_ID \
+    -var=cluster_name=ml-adk-llama-vllm-$_BUILD_ID-cluster \
+    -var=cluster_location=$_ADK_LLAMA_VLLM_REGION \
+    -var=artifact_registry_name=ml-adk-llama-vllm-$_BUILD_ID \
+    -auto-approve -no-color
+    echo "pass" > /workspace/adk_llama_vllm_cleanup_gke_cluster.txt
+  allowFailure: true
+  waitFor: ['adk-llama-vllm: test guide']
+
+- id: 'check result'
+  name: "ubuntu"
+  entrypoint: 'bash'
+  waitFor: ['adk-llama-vllm: cleanup gke cluster']
+  args:
+  - '-c'
+  - |
+    set -e
+
+    echo "pass" > /workspace/check_result.txt
+
+    if [[ $(cat /workspace/adk_llama_vllm_gke_cluster_result.txt) != "pass" ]]; then
+      echo "adk llama vllm gke cluster creation failed"
+      echo "error" > /workspace/check_result.txt
+    fi
+
+    if [[ $(cat /workspace/adk_llama_vllm_test_guide.txt) != "pass" ]]; then
+      echo "adk llama vllm test guide failed"
+      echo "error" > /workspace/check_result.txt
+    fi
+
+    if [[ $(cat /workspace/adk_llama_vllm_cleanup_gke_cluster.txt) != "pass" ]]; then
+      echo "adk llama vllm gke cluster cleanup failed"
+      echo "error" > /workspace/check_result.txt
+    fi
+
+    if [[ $(cat /workspace/check_result.txt) != "pass" ]]; then
+      cat /workspace/check_result.txt
+      exit 1
+    fi
+
+substitutions:
+  _ADK_LLAMA_VLLM_REGION: us-east4
+  _USER_NAME: github
+  _AUTOPILOT_CLUSTER: "true"
+  _BUILD_ID: ${BUILD_ID:0:8}
+  _SERVICE_ACCOUNT_EMAIL: dmitriy-drogovoz-us@ai-on-gke-qss.iam.gserviceaccount.com
+logsBucket: gs://ai-on-gke-qss-build-logs
+options:
+  substitutionOption: "ALLOW_LOOSE"
+  machineType: "E2_HIGHCPU_8"
+timeout: 5400s
+availableSecrets:
+  secretManager:
+  - versionName: projects/ai-on-gke-qss/secrets/cloudbuild-hf-token/versions/latest
+    env: "HF_TOKEN"
