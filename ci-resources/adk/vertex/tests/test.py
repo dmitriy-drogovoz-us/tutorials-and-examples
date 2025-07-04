@@ -2,8 +2,6 @@ import sys
 import requests
 import json
 
-print("TEST TRIGGER!")
-
 def test_model_interaction(base_url):
     url = f'{base_url}/apps/capital_agent/users/1/sessions'
     headers = {
