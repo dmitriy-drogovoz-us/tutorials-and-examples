@@ -79,7 +79,7 @@ steps:
     echo "fail" > /workspace/adk_llama_vllm_test_guide.txt
 
     kubectl create secret generic hf-token-secret \
-        --from-literal=token=${HF_TOKEN} \
+        --from-literal=token=$$HF_TOKEN \
         --dry-run=client -o yaml | kubectl apply -f -
 
     cd deploy-llm
