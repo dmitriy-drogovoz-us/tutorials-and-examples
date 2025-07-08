@@ -72,7 +72,8 @@ steps:
 
 - id: "ray-serve: test guide"
   name: "gcr.io/cloud-builders/kubectl"
-  dir: "/workspace/ray-serve/terraform"
+  dir: "/workspace/ray-serve/ray-serve-vllm"
+  secretEnv: ["HF_TOKEN"]
   env:
     - "CLOUDSDK_COMPUTE_ZONE=${_REGION}"
     - "CLOUDSDK_CONTAINER_CLUSTER=ml-${_BUILD_ID}-cluster"
@@ -83,7 +84,76 @@ steps:
     set -e
     echo "fail" > /workspace/ray_serve_test_guide.txt
 
+    kubectl create secret generic hf-secret \
+      --from-literal=hf_api_token=$$HF_TOKEN \
+      --dry-run=client -o yaml | kubectl apply -f -
+
+    gcloud builds submit \
+      --tag us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/llama-ray-serve:latest \
+      --project=$PROJECT_ID \
+      .
+
+    apt update
+    curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+    apt install apt-transport-https --yes
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+    apt update
+    apt install helm
+
+    helm repo add kuberay https://ray-project.github.io/kuberay-helm/
+    helm repo update
+    helm search repo kuberay --devel
+    helm install kuberay-operator kuberay/kuberay-operator --version 1.3.2
     kubectl get pods
+    sleep 30
+
+    sed -i "s|image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/llama-ray-serve:latest|image: us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/llama-ray-serve:latest|g" ray-service.yaml
+    kubectl apply -f ray-service.yaml
+    kubectl get rayservice llama-31-8b -o yaml
+    kubectl get raycluster
+    kubectl get pods
+    kubectl get configmaps
+    sleep 15m
+    kubectl port-forward service/llama-31-8b-serve-svc 8000:8000 &
+    bash ../tests/test_model.sh
+    city="New York"
+    if bash ../tests/test_model.sh | grep -q -m 1 "$city"; then
+      echo "SUCCESS: String '$city' found."
+    else
+      echo "ERROR: $city not found."
+      exit 1
+    fi
+
+    cd ../adk_agent
+    gcloud builds submit \
+      --tag us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/adk-agent:latest \
+      --project=$PROJECT_ID \
+      .
+    sed -i "s|image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/adk-agent:latest|image: us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/adk-agent:latest|g" example-agent/agent-deployment.yaml
+    sed -i "s|value: <PROJECT-ID>|value: $PROJECT_ID|g" example-agent/agent-deployment.yaml
+    sed -i "s|value: <REGION>|value: $_RAY_SERVE_REGION|g" example-agent/agent-deployment.yaml
+    kubectl apply -f ./example-agent/agent-deployment.yaml
+    sleep 5s
+    kubectl get pods
+    kubectl get services
+    sleep 5m
+    external_ip=$(kubectl get service adk-agent -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+    curl http://$external_ip:80/apps/example-agent/users/user1/sessions \
+      -X POST \
+      -H "Content-Type: application/json" \
+      -d '{}'
+    curl http://$external_ip:80/run \
+      -X POST \
+      -H "Content-Type: application/json" \
+      -d '{
+        "app_name": "example-agent",
+        "user_id": "user1",
+        "session_id": "836c4e74-5ee3-4bc8-96c2-94d77f079e34",
+        "new_message": {
+          "parts": [{"text": "What is the weather like in Seattle?"}],
+          "role": "user"
+        }
+      }'
 
     echo "pass" > /workspace/ray_serve_test_guide.txt
   allowFailure: true
@@ -157,3 +227,7 @@ options:
   substitutionOption: "ALLOW_LOOSE"
   machineType: "E2_HIGHCPU_8"
 timeout: 5400s
+availableSecrets:
+  secretManager:
+  - versionName: projects/ai-on-gke-qss/secrets/cloudbuild-hf-token/versions/latest
+    env: "HF_TOKEN"
