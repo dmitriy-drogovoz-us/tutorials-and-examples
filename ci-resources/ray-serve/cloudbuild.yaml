@@ -1,0 +1,159 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+steps:
+- id: "ray-serve: prepare tests"
+  name: "gcr.io/cloud-builders/gcloud"
+  entrypoint: "bash"
+  args:
+    - '-c'
+    - |
+      cp -r /workspace/ci-resources/ray-serve/tests /workspace/ray-serve/tests
+
+- id: "ray-serve: validate platform"
+  name: "hashicorp/terraform:latest"
+  dir: "/workspace/ray-serve/terraform"
+  script: |
+    terraform init -no-color
+    terraform validate -no-color
+  waitFor: ["ray-serve: prepare tests"]
+
+- id: 'ray-serve: create gke cluster'
+  name: "hashicorp/terraform:latest"
+  dir: "/workspace/ray-serve/terraform"
+  env:
+  - "KUBE_LOAD_CONFIG_FILE=false"
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+
+    echo "fail" > /workspace/ray_serve_gke_cluster_result.txt
+    terraform apply \
+    -var-file=default_env.tfvars \
+    -var=project_id=$PROJECT_ID \
+    -var=default_resource_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
+    -var=cluster_name=ml-ray-serve-$_BUILD_ID-cluster \
+    -var=cluster_location=$_RAY_SERVE_REGION \
+    -var=network_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
+    -var=subnetwork_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
+    -var=subnetwork_region=$_RAY_SERVE_REGION \
+    -var=image_repository_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
+    -var=iam_service_account_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa \
+    -var=k8s_service_account_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa \
+    -auto-approve -no-color
+    echo "pass" > /workspace/ray_serve_gke_cluster_result.txt
+  allowFailure: true
+  waitFor: ['ray-serve: validate platform']
+
+- id: 'ray-serve: generate kubeconfig'
+  name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - 'container'
+  - 'clusters'
+  - 'get-credentials'
+  - 'ml-ray-serve-${SHORT_SHA}-${_BUILD_ID}-cluster'
+  - '--region=${_RAY_SERVE_REGION}'
+  - '--project=${PROJECT_ID}'
+  allowFailure: true
+  waitFor: ['ray-serve: create gke cluster']
+
+- id: "ray-serve: test guide"
+  name: "gcr.io/cloud-builders/kubectl"
+  dir: "/workspace/ray-serve/terraform"
+  env:
+    - "CLOUDSDK_COMPUTE_ZONE=${_REGION}"
+    - "CLOUDSDK_CONTAINER_CLUSTER=ml-${SHORT_SHA}-${_BUILD_ID}-cluster"
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+    echo "fail" > /workspace/ray_serve_test_guide.txt
+
+    kubectl get pods
+
+    echo "pass" > /workspace/ray_serve_test_guide.txt
+  allowFailure: true
+  waitFor: ['ray-serve: generate kubeconfig']
+
+- id: 'ray-serve: cleanup gke cluster'
+  name: "hashicorp/terraform:latest"
+  dir: "/workspace/ray-serve/terraform"
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+
+    echo "fail" > /workspace/ray_serve_cleanup_gke_cluster.txt
+    terraform destroy \
+    -var-file=default_env.tfvars \
+    -var=project_id=$PROJECT_ID \
+    -var=default_resource_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
+    -var=cluster_name=ml-ray-serve-$_BUILD_ID-cluster \
+    -var=cluster_location=$_RAY_SERVE_REGION \
+    -var=network_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
+    -var=subnetwork_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
+    -var=subnetwork_region=$_RAY_SERVE_REGION \
+    -var=image_repository_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
+    -var=iam_service_account_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa \
+    -var=k8s_service_account_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa \
+    -auto-approve -no-color
+    echo "pass" > /workspace/ray_serve_cleanup_gke_cluster.txt
+  allowFailure: true
+  waitFor: ['ray-serve: test guide']
+
+- id: 'check result'
+  name: "ubuntu"
+  entrypoint: 'bash'
+  waitFor: ['ray-serve: cleanup gke cluster']
+  args:
+  - '-c'
+  - |
+    set -e
+
+    echo "pass" > /workspace/check_result.txt
+
+    if [[ $(cat /workspace/ray_serve_gke_cluster_result.txt) != "pass" ]]; then
+      echo "adk vertex gke cluster creation failed"
+      echo "error" > /workspace/check_result.txt
+    fi
+
+    if [[ $(cat /workspace/ray_serve_test_guide.txt) != "pass" ]]; then
+      echo "adk vertex test guide failed"
+      echo "error" > /workspace/check_result.txt
+    fi
+
+    if [[ $(cat /workspace/ray_serve_cleanup_gke_cluster.txt) != "pass" ]]; then
+      echo "adk vertex gke cluster cleanup failed"
+      echo "error" > /workspace/check_result.txt
+    fi
+
+    if [[ $(cat /workspace/check_result.txt) != "pass" ]]; then
+      cat /workspace/check_result.txt
+      exit 1
+    fi
+
+substitutions:
+  _RAY_SERVE_REGION: us-central1
+  _USER_NAME: github
+  _AUTOPILOT_CLUSTER: "false"
+  _BUILD_ID: ${BUILD_ID:0:8}
+logsBucket: gs://ai-on-gke-qss-build-logs
+options:
+  substitutionOption: "ALLOW_LOOSE"
+  machineType: "E2_HIGHCPU_8"
+timeout: 5400s
