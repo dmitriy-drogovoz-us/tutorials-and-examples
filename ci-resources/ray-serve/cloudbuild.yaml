@@ -64,7 +64,7 @@ steps:
   - 'container'
   - 'clusters'
   - 'get-credentials'
-  - 'ml-ray-serve-${SHORT_SHA}-${_BUILD_ID}-cluster'
+  - 'ml-ray-serve-${_BUILD_ID}-cluster'
   - '--region=${_RAY_SERVE_REGION}'
   - '--project=${PROJECT_ID}'
   allowFailure: true
@@ -75,7 +75,7 @@ steps:
   dir: "/workspace/ray-serve/terraform"
   env:
     - "CLOUDSDK_COMPUTE_ZONE=${_REGION}"
-    - "CLOUDSDK_CONTAINER_CLUSTER=ml-${SHORT_SHA}-${_BUILD_ID}-cluster"
+    - "CLOUDSDK_CONTAINER_CLUSTER=ml-${_BUILD_ID}-cluster"
   entrypoint: 'sh'
   args:
   - '-c'
