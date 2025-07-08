@@ -53,7 +53,6 @@ module "project-services" {
     "pubsub.googleapis.com",
     "servicenetworking.googleapis.com",
     "serviceusage.googleapis.com",
-    # "sourcerepo.googleapis.com", # deprecated: https://cloud.google.com/source-repositories/docs/reference/rest
     "iap.googleapis.com"
   ])
 }
