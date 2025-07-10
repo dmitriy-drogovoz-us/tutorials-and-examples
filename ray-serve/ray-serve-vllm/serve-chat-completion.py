@@ -1,7 +1,6 @@
 import os
 import logging
 import sys
-import argparse
 import traceback
 
 from typing import Dict, Optional, Any
@@ -12,6 +11,7 @@ from starlette.responses import StreamingResponse, JSONResponse
 
 from ray import serve
 
+from vllm.utils import FlexibleArgumentParser
 from vllm.engine.arg_utils import AsyncEngineArgs
 from vllm.engine.async_llm_engine import AsyncLLMEngine
 from vllm.entrypoints.chat_utils import load_chat_template
@@ -104,7 +104,7 @@ class VLLMDeployment:
                     content=ErrorResponse(message=f"Server initialization error: {str(e)}", type="InternalServerError", code=500).model_dump(),
                     status_code=500
                 )
-        
+
         generator = await self.openai_serving_chat.create_chat_completion(request, raw_request)
 
         if isinstance(generator, ErrorResponse):
@@ -132,7 +132,7 @@ class VLLMDeployment:
 
 def parse_vllm_args(cli_args: Dict[str, Any]):
     """Parses vLLM AsyncEngineArgs args based on CLI inputs."""
-    parser = argparse.ArgumentParser()
+    parser = FlexibleArgumentParser()
     make_arg_parser(parser)
 
     arg_strings = []
