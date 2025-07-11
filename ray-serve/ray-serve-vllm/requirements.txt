@@ -1,5 +1,6 @@
-vllm==0.9.0
-transformers[torch]==4.52.4
+vllm==0.8.5
+transformers[torch]==4.53.1
 fastapi==0.115.12
 uvicorn==0.22.0
 starlette==0.46.2
+numpy==1.26.4

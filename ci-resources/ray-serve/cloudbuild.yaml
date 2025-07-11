@@ -88,11 +88,6 @@ steps:
       --from-literal=hf_api_token=$$HF_TOKEN \
       --dry-run=client -o yaml | kubectl apply -f -
 
-    gcloud builds submit \
-      --tag us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/llama-ray-serve:latest \
-      --project=$PROJECT_ID \
-      .
-
     apt update
     curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
     apt install apt-transport-https --yes
@@ -107,13 +102,16 @@ steps:
     kubectl get pods
     sleep 30
 
+    gcloud builds submit \
+      --tag us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/llama-ray-serve:latest \
+      --project=$PROJECT_ID \
+      .
+
     sed -i "s|image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/llama-ray-serve:latest|image: us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/llama-ray-serve:latest|g" ray-service.yaml
     kubectl apply -f ray-service.yaml
     kubectl get rayservice llama-31-8b -o yaml
-    kubectl get raycluster
-    kubectl get pods
-    kubectl get configmaps
-    sleep 15m
+    sleep 30s
+    kubectl wait --for=jsonpath='.status.state'=ready raycluster/$(kubectl get raycluster -o=jsonpath='{.items[0].metadata.name}') --timeout=1200s
     kubectl port-forward service/llama-31-8b-serve-svc 8000:8000 &
     bash ../tests/test_model.sh
     city="New York"
@@ -220,7 +218,7 @@ steps:
 substitutions:
   _RAY_SERVE_REGION: us-central1
   _USER_NAME: github
-  _AUTOPILOT_CLUSTER: "false"
+  _AUTOPILOT_CLUSTER: "true"
   _BUILD_ID: ${BUILD_ID:0:8}
 logsBucket: gs://ai-on-gke-qss-build-logs
 options:

@@ -1,4 +1,4 @@
-FROM rayproject/ray-ml:nightly-gpu
+FROM rayproject/ray-ml:nightly.250616.74d958-gpu
 WORKDIR /app
 
 COPY requirements.txt .
