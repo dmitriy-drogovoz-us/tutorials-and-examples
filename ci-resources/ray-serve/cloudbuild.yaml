@@ -100,6 +100,9 @@ steps:
 - id: "ray-serve: build adk_agent"
   name: 'gcr.io/cloud-builders/gcloud'
   dir: "/workspace/ray-serve/adk_agent"
+  env:
+  - "CLOUDSDK_COMPUTE_ZONE=${_REGION}"
+  - "CLOUDSDK_CONTAINER_CLUSTER=ml-${_BUILD_ID}-cluster"
   args:
   - builds
   - submit
@@ -148,10 +151,6 @@ steps:
     fi
 
     cd ../adk_agent
-    gcloud builds submit \
-      --tag us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/adk-agent:latest \
-      --project=$PROJECT_ID \
-      .
     sed -i "s|image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/adk-agent:latest|image: us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/adk-agent:latest|g" example-agent/agent-deployment.yaml
     sed -i "s|serviceAccount: adk-ray-agent-sa|serviceAccount: ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa" ray-service.yaml
     sed -i "s|value: <PROJECT-ID>|value: $PROJECT_ID|g" example-agent/agent-deployment.yaml
