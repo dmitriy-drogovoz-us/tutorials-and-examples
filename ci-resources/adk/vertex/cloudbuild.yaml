@@ -176,6 +176,7 @@ steps:
   - |
     set -e
 
+
     echo "fail" > /workspace/adk_vertex_cleanup_gke_cluster.txt
     terraform destroy \
     -var-file=default_env.tfvars \
