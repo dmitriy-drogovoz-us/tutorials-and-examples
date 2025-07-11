@@ -175,7 +175,7 @@ steps:
 
     echo "pass" > /workspace/ray_serve_test_guide.txt
   allowFailure: true
-  waitFor: ['ray-serve: generate kubeconfig']
+  waitFor: ['ray-serve: install kuberay-operator', 'ray-serve: build ray-serve-vllm', 'ray-serve: build adk_agent']
 
 - id: 'ray-serve: cleanup gke cluster'
   name: "gcr.io/${PROJECT_ID}/terraform"
