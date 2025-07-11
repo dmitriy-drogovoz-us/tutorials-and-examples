@@ -176,7 +176,6 @@ steps:
   - |
     set -e
 
-
     echo "fail" > /workspace/adk_vertex_cleanup_gke_cluster.txt
     terraform destroy \
     -var-file=default_env.tfvars \
@@ -231,6 +230,7 @@ substitutions:
   _USER_NAME: github
   _AUTOPILOT_CLUSTER: "false"
   _BUILD_ID: ${BUILD_ID:0:8}
+  _SERVICE_ACCOUNT_EMAIL: dmitriy-drogovoz-us@ai-on-gke-qss.iam.gserviceaccount.com
 logsBucket: gs://ai-on-gke-qss-build-logs
 options:
   substitutionOption: "ALLOW_LOOSE"

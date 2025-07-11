@@ -21,7 +21,6 @@ steps:
     - |
       cp -r /workspace/ci-resources/adk/llama/vllm/tests /workspace/adk/llama/vllm/tests
 
-
 - id: "adk-llama-vllm: validate platform"
   name: "hashicorp/terraform:latest"
   dir: "/workspace/adk/llama/vllm/terraform"
