@@ -22,7 +22,7 @@ steps:
       cp -r /workspace/ci-resources/ray-serve/tests /workspace/ray-serve/tests
 
 - id: "ray-serve: validate platform"
-  name: "hashicorp/terraform:latest"
+  name: "gcr.io/${PROJECT_ID}/terraform"
   dir: "/workspace/ray-serve/terraform"
   script: |
     terraform init -no-color
@@ -30,7 +30,7 @@ steps:
   waitFor: ["ray-serve: prepare tests"]
 
 - id: 'ray-serve: create gke cluster'
-  name: "hashicorp/terraform:latest"
+  name: "gcr.io/${PROJECT_ID}/terraform"
   dir: "/workspace/ray-serve/terraform"
   env:
   - "KUBE_LOAD_CONFIG_FILE=false"
@@ -70,6 +70,39 @@ steps:
   allowFailure: true
   waitFor: ['ray-serve: create gke cluster']
 
+- id: "ray-serve: install kuberay-operator"
+  name: 'gcr.io/${PROJECT_ID}/cloud-builders-helm'
+  args:
+  - '-c'
+  - |
+    set -e
+    echo "fail" > /workspace/ray_serve_install_kuberay-operator.txt
+    echo "pass" > /workspace/ray_serve_install_kuberay-operator.txt
+  allowFailure: true
+  waitFor: ['ray-serve: generate kubeconfig']
+
+- id: "ray-serve: build ray-serve-vllm"
+  name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - '-c'
+  - |
+    set -e
+    echo "fail" > /workspace/ray_serve_build_ray-serve-vllm.txt
+    echo "pass" > /workspace/ray_serve_build_ray-serve-vllm.txt
+  allowFailure: true
+  waitFor: ['ray-serve: generate kubeconfig']
+
+- id: "ray-serve: build adk_agent"
+  name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - '-c'
+  - |
+    set -e
+    echo "fail" > /workspace/ray_serve_build_adk_agent.txt
+    echo "pass" > /workspace/ray_serve_build_adk_agent.txt
+  allowFailure: true
+  waitFor: ['ray-serve: generate kubeconfig']
+
 - id: "ray-serve: test guide"
   name: "gcr.io/cloud-builders/kubectl"
   dir: "/workspace/ray-serve/ray-serve-vllm"
@@ -88,32 +121,18 @@ steps:
       --from-literal=hf_api_token=$$HF_TOKEN \
       --dry-run=client -o yaml | kubectl apply -f -
 
-    apt update
-    curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
-    apt install apt-transport-https --yes
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
-    apt update
-    apt install helm
-
-    helm repo add kuberay https://ray-project.github.io/kuberay-helm/
-    helm repo update
-    helm search repo kuberay --devel
-    helm install kuberay-operator kuberay/kuberay-operator --version 1.3.2
-    kubectl get pods
-    sleep 30
-
     gcloud builds submit \
       --tag us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/llama-ray-serve:latest \
       --project=$PROJECT_ID \
       .
 
     sed -i "s|image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/llama-ray-serve:latest|image: us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/llama-ray-serve:latest|g" ray-service.yaml
+    sed -i "s|serviceAccount: adk-ray-agent-sa|serviceAccount: ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa" ray-service.yaml
     kubectl apply -f ray-service.yaml
     kubectl get rayservice llama-31-8b -o yaml
     sleep 30s
     kubectl wait --for=jsonpath='.status.state'=ready raycluster/$(kubectl get raycluster -o=jsonpath='{.items[0].metadata.name}') --timeout=1200s
     kubectl port-forward service/llama-31-8b-serve-svc 8000:8000 &
-    bash ../tests/test_model.sh
     city="New York"
     if bash ../tests/test_model.sh | grep -q -m 1 "$city"; then
       echo "SUCCESS: String '$city' found."
@@ -128,6 +147,7 @@ steps:
       --project=$PROJECT_ID \
       .
     sed -i "s|image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/adk-agent:latest|image: us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/adk-agent:latest|g" example-agent/agent-deployment.yaml
+    sed -i "s|serviceAccount: adk-ray-agent-sa|serviceAccount: ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa" ray-service.yaml
     sed -i "s|value: <PROJECT-ID>|value: $PROJECT_ID|g" example-agent/agent-deployment.yaml
     sed -i "s|value: <REGION>|value: $_RAY_SERVE_REGION|g" example-agent/agent-deployment.yaml
     kubectl apply -f ./example-agent/agent-deployment.yaml
@@ -158,7 +178,7 @@ steps:
   waitFor: ['ray-serve: generate kubeconfig']
 
 - id: 'ray-serve: cleanup gke cluster'
-  name: "hashicorp/terraform:latest"
+  name: "gcr.io/${PROJECT_ID}/terraform"
   dir: "/workspace/ray-serve/terraform"
   entrypoint: 'sh'
   args:
@@ -197,6 +217,21 @@ steps:
 
     if [[ $(cat /workspace/ray_serve_gke_cluster_result.txt) != "pass" ]]; then
       echo "adk vertex gke cluster creation failed"
+      echo "error" > /workspace/check_result.txt
+    fi
+
+    if [[ $(cat /workspace/ray_serve_install_kuberay-operator.txt) != "pass" ]]; then
+      echo "ray-serve install kuberay-operator failed"
+      echo "error" > /workspace/check_result.txt
+    fi
+
+    if [[ $(cat /workspace/ray_serve_build_ray-serve-vllm.txt) != "pass" ]]; then
+      echo "ray-serve build ray-serve-vllm failed"
+      echo "error" > /workspace/check_result.txt
+    fi
+
+    if [[ $(cat /workspace/ray_serve_build_adk_agent.txt) != "pass" ]]; then
+      echo "ray-serve build adk_agent failed"
       echo "error" > /workspace/check_result.txt
     fi
 
