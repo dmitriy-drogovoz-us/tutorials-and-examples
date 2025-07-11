@@ -71,7 +71,7 @@ steps:
   waitFor: ['ray-serve: create gke cluster']
 
 - id: "ray-serve: install kuberay-operator"
-  name: 'gcr.io/${PROJECT_ID}/cloud-builders-helm'
+  name: 'gcr.io/${PROJECT_ID}/helm'
   args:
   - '-c'
   - |
@@ -89,15 +89,11 @@ steps:
   name: 'gcr.io/cloud-builders/gcloud'
   dir: "/workspace/ray-serve/ray-serve-vllm"
   args:
-  - '-c'
-  - |
-    set -e
-    echo "fail" > /workspace/ray_serve_build_ray-serve-vllm.txt
-    gcloud builds submit \
-      --tag us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/llama-ray-serve:latest \
-      --project=$PROJECT_ID \
-      .
-    echo "pass" > /workspace/ray_serve_build_ray-serve-vllm.txt
+  - builds
+  - submit
+  - --tag
+  - us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/llama-ray-serve:latest
+  - .
   allowFailure: true
   waitFor: ['ray-serve: generate kubeconfig']
 
@@ -105,15 +101,11 @@ steps:
   name: 'gcr.io/cloud-builders/gcloud'
   dir: "/workspace/ray-serve/adk_agent"
   args:
-  - '-c'
-  - |
-    set -e
-    echo "fail" > /workspace/ray_serve_build_adk_agent.txt
-     gcloud builds submit \
-      --tag us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/adk-agent:latest \
-      --project=$PROJECT_ID \
-      .
-    echo "pass" > /workspace/ray_serve_build_adk_agent.txt
+  - builds
+  - submit
+  - --tag
+  - us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/adk-agent:latest
+  - .
   allowFailure: true
   waitFor: ['ray-serve: generate kubeconfig']
 
@@ -236,16 +228,6 @@ steps:
 
     if [[ $(cat /workspace/ray_serve_install_kuberay-operator.txt) != "pass" ]]; then
       echo "ray-serve install kuberay-operator failed"
-      echo "error" > /workspace/check_result.txt
-    fi
-
-    if [[ $(cat /workspace/ray_serve_build_ray-serve-vllm.txt) != "pass" ]]; then
-      echo "ray-serve build ray-serve-vllm failed"
-      echo "error" > /workspace/check_result.txt
-    fi
-
-    if [[ $(cat /workspace/ray_serve_build_adk_agent.txt) != "pass" ]]; then
-      echo "ray-serve build adk_agent failed"
       echo "error" > /workspace/check_result.txt
     fi
 
