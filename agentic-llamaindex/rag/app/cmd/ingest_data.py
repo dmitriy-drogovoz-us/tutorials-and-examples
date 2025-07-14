@@ -9,45 +9,36 @@ from llama_index.core.ingestion import IngestionPipeline
 from llama_index.vector_stores.redis import RedisVectorStore
 from llama_index.core import Document, VectorStoreIndex, SimpleDirectoryReader
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Add package to PYTHONPATH
 sys.path.append(str(pathlib.Path(__file__).parent.parent.absolute()))
 from rag_demo import custom_schema, getenv_or_exit
 
-# Environment variables
 EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "BAAI/bge-small-en-v1.5")
 REDIS_HOST = getenv_or_exit("REDIS_HOST")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 INPUT_DIR = getenv_or_exit("INPUT_DIR")
 
-# Initialize embedding model
 embed_model = HuggingFaceEmbedding(model_name=EMBEDDING_MODEL_NAME)
 
-# Initialize vector store
 vector_store = RedisVectorStore(
     schema=custom_schema,
     redis_url=f"redis://{REDIS_HOST}:{REDIS_PORT}",
 )
 
-# Set up minimal ingestion pipeline
 pipeline = IngestionPipeline(
     transformations=[embed_model],
     vector_store=vector_store,
 )
 
-# Initialize index
 index = VectorStoreIndex.from_vector_store(
     vector_store,
     embed_model=embed_model
 )
 
 def load_data(reader: SimpleDirectoryReader):
-    """Load CSV data from directory and convert to LlamaIndex Documents."""
     try:
-        # Load all files in INPUT_DIR (expecting CSV files)
         files = reader.load_data()
         documents = []
         
@@ -56,7 +47,6 @@ def load_data(reader: SimpleDirectoryReader):
             logger.info(f"Processing file: {file_path}")
             df = pd.read_csv(file_path)
             
-            # Convert each row to a Document
             for _, row in df.iterrows():
                 text = (
                     f"Title: {row['Series_Title']}\n"
@@ -89,20 +79,16 @@ def load_data(reader: SimpleDirectoryReader):
         logger.error(f"Error loading data from {INPUT_DIR}: {str(e)}")
         sys.exit(1)
 
-# Load and ingest data
 reader = SimpleDirectoryReader(input_dir=INPUT_DIR)
 docs = load_data(reader)
 logger.info(f"Loaded {len(docs)} documents")
 
-# Process documents individually
 nodes = []
 for doc in docs:
     logger.info(f"Ingesting document: {doc.id_}")
     try:
-        # Generate embedding manually to debug
         embedding = embed_model.get_text_embedding(doc.text)
         logger.info(f"Embedding generated for {doc.id_}: {len(embedding)} dimensions")
-        # Run pipeline
         node_list = pipeline.run(documents=[doc], show_progress=True)
         nodes.extend(node_list)
         logger.info(f"Nodes created for {doc.id_}: {len(node_list)}")

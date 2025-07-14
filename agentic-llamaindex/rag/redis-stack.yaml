@@ -16,9 +16,16 @@ spec:
     spec:
       containers:
       - name: redis-stack
-        image: redis/redis-stack:latest
+        image: redis/redis-stack:7.2.0-v17
         ports:
         - containerPort: 6379
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 4Gi
+          requests:
+            cpu: 250m
+            memory: 256Mi
 ---
 apiVersion: v1
 kind: Service
