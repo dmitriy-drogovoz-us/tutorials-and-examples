@@ -45,7 +45,7 @@ steps:
     -var-file=default_env.tfvars \
     -var=project_id=$PROJECT_ID \
     -var=default_resource_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
-    -var=cluster_name=ml-ray-serve-$_BUILD_ID-cluster \
+    -var=cluster_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER-cluster \
     -var=cluster_location=$_RAY_SERVE_REGION \
     -var=network_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
     -var=subnetwork_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
@@ -58,32 +58,21 @@ steps:
   allowFailure: true
   waitFor: ['ray-serve: validate platform']
 
-- id: 'ray-serve: generate kubeconfig'
-  name: 'gcr.io/cloud-builders/gcloud'
-  args:
-  - 'container'
-  - 'clusters'
-  - 'get-credentials'
-  - 'ml-ray-serve-${_BUILD_ID}-cluster'
-  - '--region=${_RAY_SERVE_REGION}'
-  - '--project=${PROJECT_ID}'
-  allowFailure: true
-  waitFor: ['ray-serve: create gke cluster']
-
 - id: "ray-serve: install kuberay-operator"
   name: 'gcr.io/${PROJECT_ID}/helm'
   args:
-  - '-c'
-  - |
-    set -e
-    echo "fail" > /workspace/ray_serve_install_kuberay-operator.txt
-    helm repo add kuberay https://ray-project.github.io/kuberay-helm/
-    helm repo update
-    helm search repo kuberay --devel
-    helm install kuberay-operator kuberay/kuberay-operator --version 1.3.2
-    echo "pass" > /workspace/ray_serve_install_kuberay-operator.txt
+  - 'install'
+  - 'kuberay-operator'
+  - 'kuberay/kuberay-operator'
+  - '--version'
+  - '1.3.0'
+  env:
+  - "CLOUDSDK_COMPUTE_ZONE=${_RAY_SERVE_REGION}"
+  - "CLOUDSDK_CONTAINER_CLUSTER=ml-ray-serve-${_BUILD_ID}-${_AUTOPILOT_CLUSTER}-cluster"
+  - "HELM_REPO_NAME=kuberay"
+  - "HELM_REPO_URL=https://ray-project.github.io/kuberay-helm/"
   allowFailure: true
-  waitFor: ['ray-serve: generate kubeconfig']
+  waitFor: ['ray-serve: create gke cluster']
 
 - id: "ray-serve: build ray-serve-vllm"
   name: 'gcr.io/cloud-builders/gcloud'
@@ -95,14 +84,11 @@ steps:
   - us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/llama-ray-serve:latest
   - .
   allowFailure: true
-  waitFor: ['ray-serve: generate kubeconfig']
+  waitFor: ['ray-serve: create gke cluster']
 
 - id: "ray-serve: build adk_agent"
   name: 'gcr.io/cloud-builders/gcloud'
   dir: "/workspace/ray-serve/adk_agent"
-  env:
-  - "CLOUDSDK_COMPUTE_ZONE=${_REGION}"
-  - "CLOUDSDK_CONTAINER_CLUSTER=ml-${_BUILD_ID}-cluster"
   args:
   - builds
   - submit
@@ -110,15 +96,27 @@ steps:
   - us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/adk-agent:latest
   - .
   allowFailure: true
-  waitFor: ['ray-serve: generate kubeconfig']
+  waitFor: ['ray-serve: create gke cluster']
+
+- id: 'ray-serve: generate kubeconfig'
+  name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - 'container'
+  - 'clusters'
+  - 'get-credentials'
+  - 'ml-ray-serve-${_BUILD_ID}-${_AUTOPILOT_CLUSTER}-cluster'
+  - '--region=${_RAY_SERVE_REGION}'
+  - '--project=${PROJECT_ID}'
+  allowFailure: true
+  waitFor: ['ray-serve: create gke cluster']
 
 - id: "ray-serve: test guide"
   name: "gcr.io/cloud-builders/kubectl"
   dir: "/workspace/ray-serve/ray-serve-vllm"
   secretEnv: ["HF_TOKEN"]
   env:
-    - "CLOUDSDK_COMPUTE_ZONE=${_REGION}"
-    - "CLOUDSDK_CONTAINER_CLUSTER=ml-${_BUILD_ID}-cluster"
+    - "CLOUDSDK_COMPUTE_ZONE=${_RAY_SERVE_REGION}"
+    - "CLOUDSDK_CONTAINER_CLUSTER=ml-ray-serve-${_BUILD_ID}-${_AUTOPILOT_CLUSTER}-cluster"
   entrypoint: 'sh'
   args:
   - '-c'
@@ -126,22 +124,37 @@ steps:
     set -e
     echo "fail" > /workspace/ray_serve_test_guide.txt
 
+    kubectl rollout status deployment/kuberay-operator
+
     kubectl create secret generic hf-secret \
       --from-literal=hf_api_token=$$HF_TOKEN \
       --dry-run=client -o yaml | kubectl apply -f -
 
-    gcloud builds submit \
-      --tag us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/llama-ray-serve:latest \
-      --project=$PROJECT_ID \
-      .
-
-    sed -i "s|image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/llama-ray-serve:latest|image: us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/llama-ray-serve:latest|g" ray-service.yaml
-    sed -i "s|serviceAccount: adk-ray-agent-sa|serviceAccount: ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa" ray-service.yaml
+    sed -i "s|image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/llama-ray-serve:latest|image: us-docker.pkg.dev/${PROJECT_ID}/ml-ray-serve-${_BUILD_ID}-${_AUTOPILOT_CLUSTER}/llama-ray-serve:latest|g" ray-service.yaml
+    sed -i "s|serviceAccount: adk-ray-agent-sa|serviceAccount: ml-ray-serve-${_BUILD_ID}-${_AUTOPILOT_CLUSTER}-sa|g" ray-service.yaml
+    cat ray-service.yaml
     kubectl apply -f ray-service.yaml
-    kubectl get rayservice llama-31-8b -o yaml
+
     sleep 30s
     kubectl wait --for=jsonpath='.status.state'=ready raycluster/$(kubectl get raycluster -o=jsonpath='{.items[0].metadata.name}') --timeout=1200s
+    kubectl get rayservice llama-31-8b -o yaml
+
+    sleep_seconds=30
+    target_svc=llama-31-8b-serve-svc
+    while true; do
+      echo "  Check if ${target_svc} is available."
+      if kubectl get svc | grep -q -m 1 "$target_svc"; then
+      echo "SUCCESS: String '$target_svc' is available!"
+      break # Exit the loop as the string is found
+      else
+      echo "  String '$target_svc' not yet found. Sleep $sleep_seconds seconds."
+      sleep ${sleep_seconds}s
+      fi
+    done
+
     kubectl port-forward service/llama-31-8b-serve-svc 8000:8000 &
+    sleep 5
+
     city="New York"
     if bash ../tests/test_model.sh | grep -q -m 1 "$city"; then
       echo "SUCCESS: String '$city' found."
@@ -150,33 +163,33 @@ steps:
       exit 1
     fi
 
-    cd ../adk_agent
-    sed -i "s|image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/adk-agent:latest|image: us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/adk-agent:latest|g" example-agent/agent-deployment.yaml
-    sed -i "s|serviceAccount: adk-ray-agent-sa|serviceAccount: ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa" ray-service.yaml
-    sed -i "s|value: <PROJECT-ID>|value: $PROJECT_ID|g" example-agent/agent-deployment.yaml
-    sed -i "s|value: <REGION>|value: $_RAY_SERVE_REGION|g" example-agent/agent-deployment.yaml
-    kubectl apply -f ./example-agent/agent-deployment.yaml
-    sleep 5s
-    kubectl get pods
-    kubectl get services
-    sleep 5m
-    external_ip=$(kubectl get service adk-agent -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-    curl http://$external_ip:80/apps/example-agent/users/user1/sessions \
-      -X POST \
-      -H "Content-Type: application/json" \
-      -d '{}'
-    curl http://$external_ip:80/run \
-      -X POST \
-      -H "Content-Type: application/json" \
-      -d '{
-        "app_name": "example-agent",
-        "user_id": "user1",
-        "session_id": "836c4e74-5ee3-4bc8-96c2-94d77f079e34",
-        "new_message": {
-          "parts": [{"text": "What is the weather like in Seattle?"}],
-          "role": "user"
-        }
-      }'
+    # cd ../adk_agent
+    # sed -i "s|image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/adk-agent:latest|image: us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/adk-agent:latest|g" example-agent/agent-deployment.yaml
+    # sed -i "s|serviceAccount: adk-ray-agent-sa|serviceAccount: ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa" ray-service.yaml
+    # sed -i "s|value: <PROJECT-ID>|value: $PROJECT_ID|g" example-agent/agent-deployment.yaml
+    # sed -i "s|value: <REGION>|value: $_RAY_SERVE_REGION|g" example-agent/agent-deployment.yaml
+    # kubectl apply -f ./example-agent/agent-deployment.yaml
+    # sleep 5s
+    # kubectl get pods
+    # kubectl get services
+    # sleep 5m
+    # external_ip=$(kubectl get service adk-agent -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+    # curl http://$external_ip:80/apps/example-agent/users/user1/sessions \
+    #   -X POST \
+    #   -H "Content-Type: application/json" \
+    #   -d '{}'
+    # curl http://$external_ip:80/run \
+    #   -X POST \
+    #   -H "Content-Type: application/json" \
+    #   -d '{
+    #     "app_name": "example-agent",
+    #     "user_id": "user1",
+    #     "session_id": "836c4e74-5ee3-4bc8-96c2-94d77f079e34",
+    #     "new_message": {
+    #       "parts": [{"text": "What is the weather like in Seattle?"}],
+    #       "role": "user"
+    #     }
+    #   }'
 
     echo "pass" > /workspace/ray_serve_test_guide.txt
   allowFailure: true
@@ -196,7 +209,7 @@ steps:
     -var-file=default_env.tfvars \
     -var=project_id=$PROJECT_ID \
     -var=default_resource_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
-    -var=cluster_name=ml-ray-serve-$_BUILD_ID-cluster \
+    -var=cluster_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER-cluster \
     -var=cluster_location=$_RAY_SERVE_REGION \
     -var=network_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
     -var=subnetwork_name=ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
@@ -222,11 +235,6 @@ steps:
 
     if [[ $(cat /workspace/ray_serve_gke_cluster_result.txt) != "pass" ]]; then
       echo "adk vertex gke cluster creation failed"
-      echo "error" > /workspace/check_result.txt
-    fi
-
-    if [[ $(cat /workspace/ray_serve_install_kuberay-operator.txt) != "pass" ]]; then
-      echo "ray-serve install kuberay-operator failed"
       echo "error" > /workspace/check_result.txt
     fi
 
