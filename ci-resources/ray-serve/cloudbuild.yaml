@@ -181,6 +181,20 @@ steps:
     kubectl get services
     kubectl rollout status deployment/adk-agent
 
+    sleep_seconds=30
+    search_string="Uvicorn running on http://0.0.0.0:8080"
+    pod_name=$(kubectl get pods -l app=adk-agent -o=jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+    while true; do
+      echo "  Streaming logs from pod '$pod_name' (tailing last 100 lines)..."
+      if kubectl logs "$pod_name" --tail=100 | grep -q -m 1 "$search_string"; then
+        echo "SUCCESS: String '$search_string' found in logs!"
+        break # Exit the loop as the string is found
+      else
+        echo "  String '$search_string' not yet found. Sleep $sleep_seconds seconds."
+        sleep ${sleep_seconds}s
+      fi
+    done
+
     kubectl port-forward svc/adk-agent 8001:80 &
     sleep 5
     python3 /workspace/ray-serve/tests/test.py http://127.0.0.1:8001
