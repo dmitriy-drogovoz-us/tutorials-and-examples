@@ -163,33 +163,27 @@ steps:
       exit 1
     fi
 
-    # cd ../adk_agent
-    # sed -i "s|image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/adk-agent:latest|image: us-docker.pkg.dev/$PROJECT_ID/ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER/adk-agent:latest|g" example-agent/agent-deployment.yaml
-    # sed -i "s|serviceAccount: adk-ray-agent-sa|serviceAccount: ml-ray-serve-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa" ray-service.yaml
-    # sed -i "s|value: <PROJECT-ID>|value: $PROJECT_ID|g" example-agent/agent-deployment.yaml
-    # sed -i "s|value: <REGION>|value: $_RAY_SERVE_REGION|g" example-agent/agent-deployment.yaml
-    # kubectl apply -f ./example-agent/agent-deployment.yaml
-    # sleep 5s
-    # kubectl get pods
-    # kubectl get services
-    # sleep 5m
-    # external_ip=$(kubectl get service adk-agent -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-    # curl http://$external_ip:80/apps/example-agent/users/user1/sessions \
-    #   -X POST \
-    #   -H "Content-Type: application/json" \
-    #   -d '{}'
-    # curl http://$external_ip:80/run \
-    #   -X POST \
-    #   -H "Content-Type: application/json" \
-    #   -d '{
-    #     "app_name": "example-agent",
-    #     "user_id": "user1",
-    #     "session_id": "836c4e74-5ee3-4bc8-96c2-94d77f079e34",
-    #     "new_message": {
-    #       "parts": [{"text": "What is the weather like in Seattle?"}],
-    #       "role": "user"
-    #     }
-    #   }'
+    cd ../adk_agent
+    sed -i "s|image: us-docker.pkg.dev/<PROJECT-ID>/llama-ray/adk-agent:latest|image: us-docker.pkg.dev/${PROJECT_ID}/ml-ray-serve-${_BUILD_ID}-${_AUTOPILOT_CLUSTER}/adk-agent:latest|g" example-agent/agent-deployment.yaml
+    sed -i "s|serviceAccount: adk-ray-agent-sa|serviceAccount: ml-ray-serve-${_BUILD_ID}-${_AUTOPILOT_CLUSTER}-sa|g" example-agent/agent-deployment.yaml
+    sed -i "s|value: <PROJECT-ID>|value: ${PROJECT_ID}|g" example-agent/agent-deployment.yaml
+    sed -i "s|value: <REGION>|value: ${_RAY_SERVE_REGION}|g" example-agent/agent-deployment.yaml
+    sed -i "s|type: LoadBalancer|type: ClusterIP|g" example-agent/agent-deployment.yaml
+    kubectl apply -f ./example-agent/agent-deployment.yaml
+
+    apt update
+    apt install python3-venv --assume-yes
+    apt install python3-pip --assume-yes
+    pip install requests
+
+    sleep 10s
+    kubectl get pods
+    kubectl get services
+    kubectl rollout status deployment/adk-agent
+
+    kubectl port-forward svc/adk-agent 8001:80 &
+    sleep 5
+    python3 /workspace/ray-serve/tests/test.py http://127.0.0.1:8001
 
     echo "pass" > /workspace/ray_serve_test_guide.txt
   allowFailure: true
