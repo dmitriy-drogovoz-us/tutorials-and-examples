@@ -25,9 +25,9 @@ steps:
   name: "hashicorp/terraform:latest"
   dir: "/workspace/adk/llama/vllm/terraform"
   script: |
+    echo "TEST CHANGE IN CLOUDBUILD.YAML"
     terraform init -no-color
     terraform validate -no-color
-
   waitFor: ["adk-llama-vllm: prepare tests"]
 
 - id: 'adk-llama-vllm: create gke cluster'
