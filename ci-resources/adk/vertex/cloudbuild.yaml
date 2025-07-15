@@ -172,7 +172,7 @@ steps:
 
     echo "pass" > /workspace/adk_vertex_test_guide.txt
   allowFailure: true
-  waitFor: ['adk-vertex: generate kubeconfig', 'adk-vertex: build adk-agen']
+  waitFor: ['adk-vertex: generate kubeconfig', 'adk-vertex: build adk-agent']
 
 - id: 'adk-vertex: cleanup gke cluster'
   name: "gcr.io/${PROJECT_ID}/terraform"
