@@ -22,7 +22,7 @@ steps:
       cp -r /workspace/ci-resources/adk/llama/vllm/tests /workspace/adk/llama/vllm/tests
 
 - id: "adk-llama-vllm: validate platform"
-  name: "hashicorp/terraform:latest"
+  name: "gcr.io/${PROJECT_ID}/terraform"
   dir: "/workspace/adk/llama/vllm/terraform"
   script: |
     terraform init -no-color
@@ -30,7 +30,7 @@ steps:
   waitFor: ["adk-llama-vllm: prepare tests"]
 
 - id: 'adk-llama-vllm: create gke cluster'
-  name: "hashicorp/terraform:latest"
+  name: "gcr.io/${PROJECT_ID}/terraform"
   dir: "/workspace/adk/llama/vllm/terraform"
   env:
   - "KUBE_LOAD_CONFIG_FILE=false"
@@ -51,6 +51,18 @@ steps:
     echo "pass" > /workspace/adk_llama_vllm_gke_cluster_result.txt
   allowFailure: true
   waitFor: ['adk-llama-vllm: validate platform']
+
+- id: "adk-llama-vllm: build adk-agent"
+  name: 'gcr.io/cloud-builders/gcloud'
+  dir: "/workspace/adk/llama/vllm/deploy-agent"
+  args:
+  - builds
+  - submit
+  - --tag
+  - us-central1-docker.pkg.dev/$PROJECT_ID/ml-adk-llama-vllm-$_BUILD_ID/adk-agent:latest
+  - .
+  allowFailure: true
+  waitFor: ['adk-llama-vllm: create gke cluster']
 
 - id: 'adk-llama-vllm: generate kubeconfig'
   name: 'gcr.io/cloud-builders/gcloud'
@@ -113,10 +125,6 @@ steps:
     fi
 
     cd ../deploy-agent
-    gcloud builds submit \
-        --tag us-central1-docker.pkg.dev/$PROJECT_ID/ml-adk-llama-vllm-$_BUILD_ID/adk-agent:latest \
-        --project=$PROJECT_ID \
-        .
     sed -i "s|image: us-central1-docker.pkg.dev/<PROJECT_ID>/adk-repo/adk-agent:latest|image: us-central1-docker.pkg.dev/${PROJECT_ID}/ml-adk-llama-vllm-${_BUILD_ID}/adk-agent:latest|g" deploy-agent.yaml
     kubectl apply -f deploy-agent.yaml
     sleep 5s
@@ -132,10 +140,10 @@ steps:
 
     echo "pass" > /workspace/adk_llama_vllm_test_guide.txt
   allowFailure: true
-  waitFor: ['adk-llama-vllm: generate kubeconfig']
+  waitFor: ['adk-llama-vllm: generate kubeconfig', 'adk-llama-vllm: build adk-agent']
 
 - id: 'adk-llama-vllm: cleanup gke cluster'
-  name: "hashicorp/terraform:latest"
+  name: "gcr.io/${PROJECT_ID}/terraform"
   dir: "/workspace/adk/llama/vllm/terraform"
   entrypoint: 'sh'
   args:

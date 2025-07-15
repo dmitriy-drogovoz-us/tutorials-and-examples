@@ -22,7 +22,7 @@ steps:
       cp -r /workspace/ci-resources/adk/vertex/tests /workspace/adk/vertex/tests
 
 - id: "adk-vertex: validate platform"
-  name: "hashicorp/terraform:latest"
+  name: "gcr.io/${PROJECT_ID}/terraform"
   dir: "/workspace/adk/vertex/terraform"
   script: |
     terraform init -no-color
@@ -30,7 +30,7 @@ steps:
   waitFor: ["adk-vertex: prepare tests"]
 
 - id: 'adk-vertex: create gke cluster'
-  name: "hashicorp/terraform:latest"
+  name: "gcr.io/${PROJECT_ID}/terraform"
   dir: "/workspace/adk/vertex/terraform"
   env:
   - "KUBE_LOAD_CONFIG_FILE=false"
@@ -58,6 +58,18 @@ steps:
   allowFailure: true
   waitFor: ['adk-vertex: validate platform']
 
+- id: "adk-vertex: build adk-agent"
+  name: 'gcr.io/cloud-builders/gcloud'
+  dir: "/workspace/adk/vertex/app"
+  args:
+  - builds
+  - submit
+  - --tag
+  - us-docker.pkg.dev/${PROJECT_ID}/ml-adk-vertex-${SHORT_SHA}-${_BUILD_ID}-${_AUTOPILOT_CLUSTER}/adk-agent:latest
+  - .
+  allowFailure: true
+  waitFor: ['adk-vertex: create gke cluster']
+
 - id: 'adk-vertex: generate kubeconfig'
   name: 'gcr.io/cloud-builders/gcloud'
   args:
@@ -82,11 +94,6 @@ steps:
   - |
     set -e
     echo "fail" > /workspace/adk_vertex_test_guide.txt
-
-    gcloud builds submit \
-        --tag us-docker.pkg.dev/${PROJECT_ID}/ml-adk-vertex-${SHORT_SHA}-${_BUILD_ID}-${_AUTOPILOT_CLUSTER}/adk-agent:latest \
-        --project=$PROJECT_ID \
-        ../app
 
     cat <<  EOF > ../app/deployment.yaml
     apiVersion: apps/v1
@@ -165,10 +172,10 @@ steps:
 
     echo "pass" > /workspace/adk_vertex_test_guide.txt
   allowFailure: true
-  waitFor: ['adk-vertex: generate kubeconfig']
+  waitFor: ['adk-vertex: generate kubeconfig', 'adk-vertex: build adk-agen']
 
 - id: 'adk-vertex: cleanup gke cluster'
-  name: "hashicorp/terraform:latest"
+  name: "gcr.io/${PROJECT_ID}/terraform"
   dir: "/workspace/adk/vertex/terraform"
   entrypoint: 'sh'
   args:
