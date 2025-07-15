@@ -242,17 +242,17 @@ steps:
     echo "pass" > /workspace/check_result.txt
 
     if [[ $(cat /workspace/ray_serve_gke_cluster_result.txt) != "pass" ]]; then
-      echo "adk vertex gke cluster creation failed"
+      echo "ray-serve gke cluster creation failed"
       echo "error" > /workspace/check_result.txt
     fi
 
     if [[ $(cat /workspace/ray_serve_test_guide.txt) != "pass" ]]; then
-      echo "adk vertex test guide failed"
+      echo "ray-serve test guide failed"
       echo "error" > /workspace/check_result.txt
     fi
 
     if [[ $(cat /workspace/ray_serve_cleanup_gke_cluster.txt) != "pass" ]]; then
-      echo "adk vertex gke cluster cleanup failed"
+      echo "ray-serve gke cluster cleanup failed"
       echo "error" > /workspace/check_result.txt
     fi
 
