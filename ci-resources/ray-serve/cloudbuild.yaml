@@ -1,4 +1,4 @@
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -136,22 +136,10 @@ steps:
     kubectl apply -f ray-service.yaml
 
     sleep 30s
-    kubectl wait --for=jsonpath='.status.state'=ready raycluster/$(kubectl get raycluster -o=jsonpath='{.items[0].metadata.name}') --timeout=1200s
+    kubectl wait --for=jsonpath='.status.conditions[0].status'=True rayservice/llama-31-8b --timeout=1200s
     kubectl get rayservice llama-31-8b -o yaml
 
     sleep_seconds=30
-    target_svc=llama-31-8b-serve-svc
-    while true; do
-      echo "  Check if ${target_svc} is available."
-      if kubectl get svc | grep -q -m 1 "$target_svc"; then
-      echo "SUCCESS: String '$target_svc' is available!"
-      break # Exit the loop as the string is found
-      else
-      echo "  String '$target_svc' not yet found. Sleep $sleep_seconds seconds."
-      sleep ${sleep_seconds}s
-      fi
-    done
-
     kubectl port-forward service/llama-31-8b-serve-svc 8000:8000 &
     sleep 5
 
