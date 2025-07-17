@@ -19,6 +19,7 @@ steps:
   args:
     - '-c'
     - |
+      echo "THIS IS A TEST TRIGGER"
       cp -r /workspace/ci-resources/ray-serve/tests /workspace/ray-serve/tests
 
 - id: "ray-serve: validate platform"
