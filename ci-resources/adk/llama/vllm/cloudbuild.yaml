@@ -199,7 +199,6 @@ substitutions:
   _USER_NAME: github
   _AUTOPILOT_CLUSTER: "true"
   _BUILD_ID: ${BUILD_ID:0:8}
-  _SERVICE_ACCOUNT_EMAIL: dmitriy-drogovoz-us@ai-on-gke-qss.iam.gserviceaccount.com
 logsBucket: gs://ai-on-gke-qss-build-logs
 options:
   substitutionOption: "ALLOW_LOOSE"
