@@ -80,3 +80,13 @@ variable "kubernetes_namespace" {
   type    = string
   default = "default"
 }
+
+variable "vertexai_custom_role_role_id" {
+  type = string
+  default = "tutorialVertexAICustomRole"
+}
+
+variable "vertexai_custom_role_role_title" {
+  type = string
+  default = "VertexAI Tutorial Custom Role"
+}

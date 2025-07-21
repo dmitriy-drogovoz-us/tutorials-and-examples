@@ -53,6 +53,8 @@ steps:
     -var=image_repository_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
     -var=iam_service_account_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa \
     -var=k8s_service_account_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa \
+    -var=vertexai_custom_role_role_id=tutorialVertexAICustomRole-$SHORT_SHA-$_BUILD_ID \
+    -var=vertexai_custom_role_role_title="VertexAI Tutorial Custom Role $SHORT_SHA $_BUILD_ID" \
     -auto-approve -no-color
     echo "pass" > /workspace/adk_vertex_gke_cluster_result.txt
   allowFailure: true
@@ -196,6 +198,8 @@ steps:
     -var=image_repository_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
     -var=iam_service_account_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa \
     -var=k8s_service_account_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa \
+    -var=vertexai_custom_role_role_id=tutorialVertexAICustomRole-$SHORT_SHA-$_BUILD_ID \
+    -var=vertexai_custom_role_role_title="VertexAI Tutorial Custom Role $SHORT_SHA $_BUILD_ID" \
     -auto-approve -no-color
     echo "pass" > /workspace/adk_vertex_cleanup_gke_cluster.txt
   allowFailure: true

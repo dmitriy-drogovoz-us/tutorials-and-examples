@@ -19,8 +19,8 @@ locals {
 
 resource "google_project_iam_custom_role" "vertexai_custom_role" {
   project = var.project_id
-  role_id = "tutorialVertexAICustomRole"
-  title   = "VertexAI Tutorial Custom Role"
+  role_id = var.vertexai_custom_role_role_id
+  title   = var.vertexai_custom_role_role_title
   permissions = [
     "aiplatform.endpoints.predict"
   ]
