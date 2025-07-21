@@ -47,6 +47,7 @@ steps:
     -var=default_resource_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
     -var=cluster_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-cluster \
     -var=cluster_location=$_ADK_VERTEX_REGION \
+    -var=autopilot_cluster=$_AUTOPILOT_CLUSTER \
     -var=network_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
     -var=subnetwork_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
     -var=subnetwork_region=$_ADK_VERTEX_REGION \
@@ -195,6 +196,7 @@ steps:
     -var=network_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
     -var=subnetwork_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
     -var=subnetwork_region=$_ADK_VERTEX_REGION \
+    -var=autopilot_cluster=$_AUTOPILOT_CLUSTER \
     -var=image_repository_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-$_AUTOPILOT_CLUSTER \
     -var=iam_service_account_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa \
     -var=k8s_service_account_name=ml-adk-vertex-$SHORT_SHA-$_BUILD_ID-$_AUTOPILOT_CLUSTER-sa \
@@ -239,7 +241,7 @@ steps:
 substitutions:
   _ADK_VERTEX_REGION: us-central1
   _USER_NAME: github
-  _AUTOPILOT_CLUSTER: "false"
+  _AUTOPILOT_CLUSTER: "true"
   _BUILD_ID: ${BUILD_ID:0:8}
 logsBucket: gs://ai-on-gke-qss-build-logs
 options:
