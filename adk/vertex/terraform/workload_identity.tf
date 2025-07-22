@@ -19,8 +19,8 @@ locals {
 
 resource "google_project_iam_custom_role" "vertexai_custom_role" {
   project = var.project_id
-  role_id = "tutorialVertexAICustomRole"
-  title   = "VertexAI Tutorial Custom Role"
+  role_id = var.vertexai_custom_role_role_id
+  title   = var.vertexai_custom_role_role_title
   permissions = [
     "aiplatform.endpoints.predict"
   ]
@@ -36,8 +36,8 @@ module "aiplatform_workload_identity" {
   automount_service_account_token = true
   namespace                       = var.kubernetes_namespace
   roles = [
-    "projects/${var.project_id}/roles/tutorialVertexAICustomRole",
+    "projects/${var.project_id}/roles/${var.vertexai_custom_role_role_id}",
   ]
   project_id = var.project_id
-  depends_on = [module.gke_cluster]
+  depends_on = [module.gke_cluster, google_project_iam_custom_role.vertexai_custom_role]
 }
