@@ -17,6 +17,7 @@ steps:
   name: "gcr.io/${PROJECT_ID}/terraform"
   dir: "/workspace/flowise/terraform"
   script: |
+    echo "THIS IS A TEST"
     terraform init -no-color
     terraform validate -no-color
   waitFor: ["-"]
