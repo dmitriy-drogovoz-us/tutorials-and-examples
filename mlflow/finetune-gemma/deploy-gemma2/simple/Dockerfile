@@ -8,10 +8,8 @@ RUN pip3 install --no-cache-dir \
     accelerate==1.1.1 bitsandbytes==0.45.0 \
     datasets==3.2.0 transformers==4.46.3 \
     peft==0.13.2 trl==0.12.2 torch==2.5.1 torchvision==0.20.1 \
-    mlflow==2.19.0 google-cloud-storage==2.19.0
-
-COPY requirements.txt /requirements.txt
-RUN pip3 install -r requirements.txt
+    mlflow==2.19.0 google-cloud-storage==2.19.0 \
+    uvicorn==0.34.0 fastapi==0.115.8
 
 COPY main.py /main.py
 

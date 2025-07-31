@@ -1,4 +1,4 @@
-# # Copyright 2023 Google LLC
+# # Copyright 2025 Google LLC
 # #
 # # Licensed under the Apache License, Version 2.0 (the "License");
 # # you may not use this file except in compliance with the License.
@@ -17,6 +17,11 @@ variable "project_id" {
   description = "GCP project id"
 }
 
+variable "project_number" {
+  type        = number
+  description = "GCP project number"
+}
+
 variable "cluster_name" {
   type = string
 }
@@ -31,33 +36,32 @@ variable "cluster_membership_id" {
   default     = ""
 }
 
-# variable "ray_version" {
-#   type    = string
-#   default = "v2.9.3"
-# }
-
 variable "kubernetes_namespace" {
   type        = string
   description = "Kubernetes namespace where resources are deployed"
   default     = "ai-on-gke"
 }
 
-# variable "enable_grafana_on_ray_dashboard" {
-#   type        = bool
-#   description = "Add option to enable or disable grafana for the ray dashboard. Enabling requires anonymous access."
-#   default     = false
-# }
+variable "create_gcs_bucket" {
+  type        = bool
+  default     = false
+  description = "Enable flag to create gcs_bucket"
+}
 
-# variable "create_gcs_bucket" {
-#   type        = bool
-#   default     = false
-#   description = "Enable flag to create gcs_bucket"
-# }
+variable "gcs_bucket" {
+  type        = string
+  description = "The GCS bucket to store data for the Ray cluster."
+}
 
-# variable "gcs_bucket" {
-#   type        = string
-#   description = "The GCS bucket to store data for the Ray cluster."
-# }
+variable "image_repository_name" {
+  type = string
+  default = "gemma"
+}
+
+variable "image_repository_location" {
+  type    = string
+  default = "us"
+}
 
 variable "create_service_account" {
   type        = bool
@@ -70,17 +74,6 @@ variable "workload_identity_service_account" {
   description = "Google Cloud IAM service account for authenticating with GCP services for GCS"
   default     = "ray-sa"
 }
-
-# variable "create_ray_cluster" {
-#   type        = bool
-#   default     = true
-#   description = "Create a Ray cluster"
-# }
-
-# variable "ray_cluster_name" {
-#   type    = string
-#   default = "ray-cluster"
-# }
 
 variable "enable_gpu" {
   type    = bool
@@ -187,78 +180,6 @@ variable "gpu_pools" {
 variable "goog_cm_deployment_name" {
   type    = string
   default = ""
-}
-
-# Ray-dashboard IAP settings
-variable "create_brand" {
-  type        = bool
-  description = "Create Brand OAuth Screen"
-  default     = false
-}
-
-variable "ray_dashboard_add_auth" {
-  type        = bool
-  description = "Enable iap authentication on frontend"
-  default     = true
-}
-
-variable "ray_dashboard_k8s_ingress_name" {
-  type    = string
-  default = "ray-dashboard-ingress"
-}
-
-variable "ray_dashboard_k8s_managed_cert_name" {
-  type        = string
-  description = "Name for frontend managed certificate"
-  default     = "ray-dashboard-managed-cert"
-}
-
-variable "ray_dashboard_k8s_iap_secret_name" {
-  type    = string
-  default = "ray-dashboard-secret"
-}
-
-variable "ray_dashboard_k8s_backend_config_name" {
-  type        = string
-  description = "Name of the Backend Config on GCP"
-  default     = "ray-dashboard-iap-config"
-}
-
-variable "ray_dashboard_k8s_backend_service_port" {
-  type        = number
-  description = "Name of the K8s Backend Service Port"
-  default     = 8265
-}
-
-variable "ray_dashboard_domain" {
-  type        = string
-  description = "Domain used for SSL certificate."
-  default     = ""
-}
-
-variable "support_email" {
-  type        = string
-  description = "Email for users to contact with questions about their consent"
-  default     = "<email>"
-}
-
-variable "ray_dashboard_client_id" {
-  type        = string
-  description = "Client ID used for enabling IAP"
-  default     = ""
-}
-
-variable "ray_dashboard_client_secret" {
-  type        = string
-  description = "Client secret used for enabling IAP"
-  default     = ""
-  sensitive   = false
-}
-
-variable "ray_dashboard_members_allowlist" {
-  type    = string
-  default = ""
-  ## keeping it string type to support single field input for marketplace UI.
 }
 
 # These default resource quotas are set intentionally high as an example that won't be limiting for most Ray clusters.

@@ -1,7 +1,6 @@
 import os
 import torch
-from datasets import load_dataset, Dataset
-import transformers
+from datasets import load_dataset
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -10,12 +9,10 @@ from transformers import (
     pipeline,
 )
 from peft import LoraConfig, PeftModel
-
 from trl import SFTTrainer
-
 import mlflow
 
-mlflow_uri = os.getenv("MLFLOW_URI", "http://my-mlflow-release-tracking:80")
+mlflow_uri = os.getenv("MLFLOW_URI", "http://mlflow:5000")
 mlflow_artifact_uri = os.getenv("MLFLOW_ARTIFACT_URI", "")
 mlflow_exp_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "gemma2-9b-finetuning")
 
@@ -238,7 +235,6 @@ with mlflow.start_run() as run:
 
     trainer.train()
     trainer.model.save_pretrained(new_model)
-    # Reload model in FP16 and merge it with LoRA weights
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
         low_cpu_mem_usage=True,
@@ -248,7 +244,6 @@ with mlflow.start_run() as run:
     )
     model = PeftModel.from_pretrained(base_model, new_model)
     model = model.merge_and_unload()
-
     generation_pipeline = pipeline(
         task="text-generation",
         model=model,

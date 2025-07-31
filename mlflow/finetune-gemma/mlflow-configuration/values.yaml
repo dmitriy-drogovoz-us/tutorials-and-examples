@@ -1,9 +1,6 @@
-tracking:
-  auth:
-    enabled: false
-  service:
-    type: ClusterIP
-minio:
-  enabled: false
-externalGCS:
-  bucket: "<BUCKET_NAME>"
+artifactRoot:
+  gcs:
+    enabled: true
+    bucket: <BUCKET_NAME>
+extraEnvVars:
+  MLFLOW_GCS_DEFAULT_TIMEOUT: "600"

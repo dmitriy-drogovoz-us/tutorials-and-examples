@@ -18,7 +18,7 @@ spec:
         cloud.google.com/gke-accelerator: nvidia-tesla-a100
       containers:
       - name: gemma2-9b-finetuned
-        image: us-docker.pkg.dev/<PROJECT_ID>/gemma-deployment/finetune-gemma-mlflow:1.0.0
+        image: us-docker.pkg.dev/<PROJECT_ID>/gemma/deploy-gemma-mlflow:1.0.0
         env:
         - name: MODEL_PATH
           value: "/data/<MLFLOW_RUN_ID>/artifacts/model/"
