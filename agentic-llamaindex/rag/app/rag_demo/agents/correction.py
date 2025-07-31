@@ -26,20 +26,23 @@ class CorrectionAgent:
             "Please generate a NEW list of up to 3 relevant movies. "
             "For each, provide a JSON object with keys: "
             "title, imdb_rating, overview, genre, released_year, director, stars. "
-            "Return the complete JSON array."
+            "Return ONLY the complete JSON array, nothing else. "
+            "Do not include any introductory text, explanations, or markdown."
         )
 
         # Call Ollama properly via .complete() and extract the text
         resp = self.llm.complete(prompt)
         text = resp.text.strip()
 
-        # parse the JSON output
         try:
             corrected = json.loads(text)
             if isinstance(corrected, list):
+                logger.info(f"Successfully parsed corrected recommendations: {corrected}")
                 return corrected
+            else:
+                logger.error("Correction output is not a JSON array")
         except json.JSONDecodeError as e:
-            logger.error(f"CorrectionAgent JSON parse error: {e}")
+            logger.error(f"CorrectionAgent JSON parse error: {e}. Raw output: {text}")
 
-        # Fallback: return the original recommendations unmodified
-        return recommendations
+        # Fallback: return an empty list if parsing fails
+        return []
