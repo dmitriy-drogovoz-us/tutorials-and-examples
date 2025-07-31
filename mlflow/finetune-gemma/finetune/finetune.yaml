@@ -6,7 +6,7 @@ metadata:
   labels:
     app: gemma-finetune
 spec:
-  backoffLimit: 2
+  backoffLimit: 1
   template:
     metadata:
       annotations:
@@ -21,7 +21,7 @@ spec:
             nvidia.com/gpu: "1"
         env:
         - name: MLFLOW_URI
-          value: "http://my-mlflow-release-tracking:80"
+          value: "http://mlflow:5000"
         - name: MLFLOW_ARTIFACT_URI
           value: "gs://<YOU_BUCKET_PATH>"
         - name: MLFLOW_EXPERIMENT_NAME

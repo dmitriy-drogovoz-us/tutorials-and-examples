@@ -16,6 +16,7 @@
 ##common variables
 ## Need to pull this variables from tf output from previous platform stage
 project_id = "<PROJECT_ID>"
+project_number = <PROJECT_NUMBER>
 
 ## this is required for terraform to connect to GKE master and deploy workloads
 create_cluster   = true # this flag will create a new standard public gke cluster in default network
@@ -27,15 +28,13 @@ cluster_location = "us-central1"
 #######################################################
 
 ## GKE environment variables
-kubernetes_namespace = "<KUBERNETES_NAMESPACE>"
+kubernetes_namespace = "default"
 
 # Creates a google service account & k8s service account & configures workload identity with appropriate permissions.
 # Set to false & update the variable `workload_identity_service_account` to use an existing IAM service account.
 create_service_account = false
-
-#DISABLE IAP
-create_brand           = false
-ray_dashboard_add_auth = false
+create_gcs_bucket = true
+gcs_bucket = "<BUCKET_NAME>"
 
 autopilot_cluster = false
 
@@ -45,7 +44,7 @@ gpu_pools = [{
   autoscaling        = true
   min_count          = 1
   max_count          = 3
-  disk_size_gb       = 100
+  disk_size_gb       = 200
   disk_type          = "pd-balanced"
   enable_gcfs        = true
   accelerator_count  = 1

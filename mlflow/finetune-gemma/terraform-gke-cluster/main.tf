@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -94,125 +94,43 @@ locals {
   kubernetes_namespace              = var.goog_cm_deployment_name != "" ? "${var.goog_cm_deployment_name}-${var.kubernetes_namespace}" : var.kubernetes_namespace
   workload_identity_service_account = var.goog_cm_deployment_name != "" ? "${var.goog_cm_deployment_name}-${var.workload_identity_service_account}" : var.workload_identity_service_account
   cluster_name                      = var.goog_cm_deployment_name != "" ? "${var.goog_cm_deployment_name}-${var.cluster_name}" : var.cluster_name
-  #ray_cluster_default_uri           = "https://console.cloud.google.com/kubernetes/service/${var.cluster_location}/${local.cluster_name}/${local.kubernetes_namespace}/${var.ray_cluster_name}-kuberay-head-svc/overview?project=${var.project_id}"
 }
 
-# provider "kubernetes" {
-#   alias                  = "ray"
-#   host                   = local.host
-#   token                  = data.google_client_config.default.access_token
-#   cluster_ca_certificate = local.private_cluster ? "" : local.ca_certificate
-#   dynamic "exec" {
-#     for_each = local.private_cluster ? [1] : []
-#     content {
-#       api_version = "client.authentication.k8s.io/v1beta1"
-#       command     = "gke-gcloud-auth-plugin"
-#     }
+module "gcs" {
+  source      = "github.com/ai-on-gke/common-infra//common/modules/gcs?ref=main"
+  count       = var.create_gcs_bucket ? 1 : 0
+  project_id  = var.project_id
+  bucket_name = var.gcs_bucket
+}
+
+
+resource "google_storage_bucket_iam_member" "gcs_bucket_iam_mlflow" {
+  bucket = var.gcs_bucket
+  role   = "roles/storage.objectUser"
+  member = "principal://iam.googleapis.com/projects/${var.project_number}/locations/global/workloadIdentityPools/${var.project_id}.svc.id.goog/subject/ns/default/sa/mlflow"
+  depends_on = [ module.gcs ]
+}
+
+resource "google_storage_bucket_iam_member" "gcs_bucket_iam_default" {
+  bucket = var.gcs_bucket
+  role   = "roles/storage.objectUser"
+  member = "principal://iam.googleapis.com/projects/${var.project_number}/locations/global/workloadIdentityPools/${var.project_id}.svc.id.goog/subject/ns/default/sa/default"
+  depends_on = [ module.gcs ]
+}
+
+
+# data "google_iam_policy" "user" {
+#   binding {
+#     role = "roles/storage.objectUser"
+#     members = [
+#       "principal://iam.googleapis.com/projects/${var.project_number}/locations/global/workloadIdentityPools/${var.project_id}.svc.id.goog/subject/ns/default/sa/mlflow",
+#       "principal://iam.googleapis.com/projects/${var.project_number}/locations/global/workloadIdentityPools/${var.project_id}.svc.id.goog/subject/ns/default/sa/default"
+#     ]
 #   }
 # }
 
-# provider "helm" {
-#   alias = "ray"
-#   kubernetes {
-#     host                   = local.host
-#     token                  = data.google_client_config.default.access_token
-#     cluster_ca_certificate = local.private_cluster ? "" : local.ca_certificate
-#     dynamic "exec" {
-#       for_each = local.private_cluster ? [1] : []
-#       content {
-#         api_version = "client.authentication.k8s.io/v1beta1"
-#         command     = "gke-gcloud-auth-plugin"
-#       }
-#     }
-#   }
-# }
-
-# module "namespace" {
-#   source           = "../../modules/kubernetes-namespace"
-#   providers        = { helm = helm.ray }
-#   create_namespace = true
-#   namespace        = local.kubernetes_namespace
-# }
-
-# module "kuberay-workload-identity" {
-#   providers                       = { kubernetes = kubernetes.ray }
-#   source                          = "terraform-google-modules/kubernetes-engine/google//modules/workload-identity"
-#   version                         = "30.0.0" # Pinning to a previous version as current version (30.1.0) showed inconsitent behaviour with workload identity service accounts
-#   use_existing_gcp_sa             = !var.create_service_account
-#   name                            = local.workload_identity_service_account
-#   namespace                       = local.kubernetes_namespace
-#   project_id                      = var.project_id
-#   roles                           = ["roles/cloudsql.client", "roles/monitoring.viewer"]
-#   automount_service_account_token = true
-#   depends_on                      = [module.namespace]
-# }
-
-# module "kuberay-monitoring" {
-#   count                           = var.create_ray_cluster ? 1 : 0
-#   source                          = "../../modules/kuberay-monitoring"
-#   providers                       = { helm = helm.ray, kubernetes = kubernetes.ray }
-#   project_id                      = var.project_id
-#   autopilot_cluster               = var.autopilot_cluster
-#   namespace                       = local.kubernetes_namespace
-#   create_namespace                = true
-#   enable_grafana_on_ray_dashboard = var.enable_grafana_on_ray_dashboard
-#   k8s_service_account             = local.workload_identity_service_account
-#   depends_on                      = [module.kuberay-workload-identity]
-# }
-
-# module "gcs" {
-#   source      = "../../modules/gcs"
-#   count       = var.create_gcs_bucket ? 1 : 0
-#   project_id  = var.project_id
-#   bucket_name = var.gcs_bucket
-# }
-
-# module "kuberay-cluster" {
-#   count                     = var.create_ray_cluster == true ? 1 : 0
-#   source                    = "../../modules/kuberay-cluster"
-#   providers                 = { helm = helm.ray, kubernetes = kubernetes.ray }
-#   name                      = var.ray_cluster_name
-#   namespace                 = local.kubernetes_namespace
-#   project_id                = var.project_id
-#   enable_tpu                = local.enable_tpu
-#   enable_gpu                = var.enable_gpu
-#   gcs_bucket                = var.gcs_bucket
-#   autopilot_cluster         = local.enable_autopilot
-#   google_service_account    = local.workload_identity_service_account
-#   grafana_host              = var.enable_grafana_on_ray_dashboard ? module.kuberay-monitoring[0].grafana_uri : ""
-#   network_policy_allow_cidr = var.kuberay_network_policy_allow_cidr
-#   disable_network_policy    = var.disable_ray_cluster_network_policy
-#   additional_labels         = var.additional_labels
-
-#   # IAP Auth parameters
-#   add_auth                 = var.ray_dashboard_add_auth
-#   create_brand             = var.create_brand
-#   support_email            = var.support_email
-#   client_id                = var.ray_dashboard_client_id
-#   client_secret            = var.ray_dashboard_client_secret
-#   k8s_ingress_name         = var.ray_dashboard_k8s_ingress_name
-#   k8s_iap_secret_name      = var.ray_dashboard_k8s_iap_secret_name
-#   k8s_managed_cert_name    = var.ray_dashboard_k8s_managed_cert_name
-#   k8s_backend_config_name  = var.ray_dashboard_k8s_backend_config_name
-#   k8s_backend_service_port = var.ray_dashboard_k8s_backend_service_port
-#   domain                   = var.ray_dashboard_domain
-#   members_allowlist        = var.ray_dashboard_members_allowlist != "" ? split(",", var.ray_dashboard_members_allowlist) : []
-#   depends_on               = [module.gcs, module.kuberay-workload-identity]
-# }
-
-
-# # Assign resource quotas to Ray namespace to ensure that they don't overutilize resources
-# resource "kubernetes_resource_quota" "ray_namespace_resource_quota" {
-#   provider = kubernetes.ray
-#   count    = var.disable_resource_quotas ? 0 : 1
-#   metadata {
-#     name      = "ray-resource-quota"
-#     namespace = local.kubernetes_namespace
-#   }
-
-#   spec {
-#     hard = var.resource_quotas
-#   }
-
-#   depends_on = [module.namespace]
+# resource "google_storage_bucket_iam_policy" "policy" {
+#   bucket = var.gcs_bucket
+#   policy_data = data.google_iam_policy.user.policy_data
+#   depends_on = [ module.gcs ]
 # }
