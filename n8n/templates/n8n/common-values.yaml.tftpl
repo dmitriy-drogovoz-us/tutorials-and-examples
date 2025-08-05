@@ -9,6 +9,8 @@ main:
 
       node:
         function_allow_builtin: "*" # ==> turns into ENV: NODE_FUNCTION_ALLOW_BUILTIN="*"
+  image:
+    tag: "1.105.3"
   extraEnv:
       DB_POSTGRESDB_DATABASE:
         valueFrom:
