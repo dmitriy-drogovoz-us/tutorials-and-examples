@@ -20,13 +20,13 @@ cluster_location  = "us-central1"
 private_cluster   = false
 autopilot_cluster = true
 
-network_name           = "" # Leave empty to use the default name
-subnetwork_name        = "" # Leave empty to use the default name
-subnetwork_region      = "us-central1"
-subnetwork_cidr        = "10.128.0.0/20"
+network_name      = "" # Leave empty to use the default name
+subnetwork_name   = "" # Leave empty to use the default name
+subnetwork_region = "us-central1"
+subnetwork_cidr   = "10.128.0.0/20"
 
-cloudsql_instance_name               = "" # Leave empty to use the default name
-cloudsql_instance_region        = "us-central1"
+cloudsql_instance_name   = "" # Leave empty to use the default name
+cloudsql_instance_region = "us-central1"
 
-ollama_service_account_name  = "" # Leave empty to use the default name
-ollama_bucket_name           = "" # Leave empty to use the default name
+ollama_service_account_name = "" # Leave empty to use the default name
+ollama_bucket_name          = "" # Leave empty to use the default name

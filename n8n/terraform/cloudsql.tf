@@ -18,8 +18,8 @@ resource "random_password" "pwd" {
 }
 
 locals {
-  cloudsql_instance_name     = var.cloudsql_instance_name != "" ? var.cloudsql_instance_name : var.default_resource_name
-  cloudsql_db_name = var.cloudsql_db_name != "" ? var.cloudsql_db_name : var.default_resource_name
+  cloudsql_instance_name = var.cloudsql_instance_name != "" ? var.cloudsql_instance_name : var.default_resource_name
+  cloudsql_db_name       = var.cloudsql_db_name != "" ? var.cloudsql_db_name : var.default_resource_name
 }
 
 module "cloudsql" {

@@ -18,7 +18,7 @@ resource "local_file" "ollama_manifest" {
     "${path.module}/../templates/ollama/ollama.yaml.tftpl",
     {
       SERVICE_ACCOUNT_NAME = local.ollama_service_account_name,
-      BUCKET_NAME  = local.ollama_bucket_name
+      BUCKET_NAME          = local.ollama_bucket_name
     }
   )
   filename = "${path.module}/../gen/ollama.yaml"
@@ -28,7 +28,7 @@ resource "local_file" "n8n_common_values_file" {
   content = templatefile(
     "${path.module}/../templates/n8n/common-values.yaml.tftpl",
     {
-      DB_HOST= module.cloudsql.private_ip_address
+      DB_HOST = module.cloudsql.private_ip_address
     }
   )
   filename = "${path.module}/../gen/n8n-common-values.yaml"
