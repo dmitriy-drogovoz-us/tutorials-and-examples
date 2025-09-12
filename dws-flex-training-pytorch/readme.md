@@ -88,7 +88,7 @@ NCCL version 2.26.6+cuda12.8
 Deploy a training job via helm. Feel free to experiment with changing some of the values.  On DWS: 
 ```
 cd $REPO_ROOT/training 
-helm upgrade --install torch-training-job . --set infra.nodepool_name="gpu-nodepool-dws" --set training_params.model_id="meta-llama/Llama-3.1-70B" --set training_params.per_device_train_batch_size=8 --set training.parallelism=2 --set image.name=${REGION}-docker.pkg.dev/${PROJECT}/${REPOSITORY}/${IMAGE_NAME}:latest --set fuse.bucket=${GSBUCKET}
+helm upgrade --install torch-training-job . --set infra.nodepool_name="gpu-nodepool-dws" --set training_params.model_id="meta-llama/Llama-3.1-70B-Instruct" --set training_params.per_device_train_batch_size=8 --set training.parallelism=2 --set image.name=${REGION}-docker.pkg.dev/${PROJECT}/${REPOSITORY}/${IMAGE_NAME}:latest --set fuse.bucket=${GSBUCKET}
 ```
 
 You can follow the job status with 
@@ -101,7 +101,7 @@ on DWS, Kueue will leave your job in a suspended state until the resources are p
 on Spot: 
 ```
 cd $REPO_ROOT/training 
-helm upgrade --install torch-training-job . --set infra.nodepool_name="gpu-nodepool-spot" --set infra.spot="true" --set training_params.model_id="meta-llama/Llama-3.1-70B" --set training_params.per_device_train_batch_size=8 --set training.parallelism=2 --set image.name=${REGION}-docker.pkg.dev/${PROJECT}/${REPOSITORY}/${IMAGE_NAME}:latest --set fuse.bucket=${GSBUCKET}
+helm upgrade --install torch-training-job . --set infra.nodepool_name="gpu-nodepool-spot" --set infra.spot="true" --set training_params.model_id="meta-llama/Llama-3.1-70B-Instruct" --set training_params.per_device_train_batch_size=8 --set training.parallelism=2 --set image.name=${REGION}-docker.pkg.dev/${PROJECT}/${REPOSITORY}/${IMAGE_NAME}:latest --set fuse.bucket=${GSBUCKET}
 ```
 
 
