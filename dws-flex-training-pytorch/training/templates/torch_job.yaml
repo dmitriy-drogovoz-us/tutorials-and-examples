@@ -1,0 +1,269 @@
+# Copyright 2025 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: headless-svc
+spec:
+  clusterIP: None # clusterIP must be None to create a headless service
+  selector:
+    job-name: torch-job # must match Job name
+  ports:
+  - protocol: TCP
+    port: 29400
+    targetPort: 29400
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: torch-job
+  labels:
+    app: torch-job
+    {{- if not .Values.infra.spot }}
+    kueue.x-k8s.io/queue-name: dws-local-queue # Kueue setting
+    {{- end }}
+spec:
+  parallelism: {{ .Values.training.parallelism }}
+  completions: {{ .Values.training.parallelism }}
+  {{- if .Values.infra.spot }}
+  suspend: false # It's a Spot job, don't wait for Kueue to unsuspend
+  {{- else }}
+  suspend: true # It's a DWS job, let Kueue manage it
+  {{- end }}
+  completionMode: Indexed
+  template:
+    metadata:
+      annotations:
+        {{- if not .Values.infra.spot }}
+        provreq.kueue.x-k8s.io/maxRunDurationSeconds: {{ .Values.kueue.max_run_duration | quote }} # Kueue setting 
+        {{- end }}
+        gke-gcsfuse/volumes: "true"
+        gke-gcsfuse/cpu-limit: "0"
+        gke-gcsfuse/memory-limit: "0"
+        gke-gcsfuse/ephemeral-storage-limit: "0"
+        networking.gke.io/default-interface: 'eth0'
+        networking.gke.io/interfaces: |
+          [
+            {"interfaceName":"eth0","network":"default"},
+            {"interfaceName":"eth1","network":"gvnic-1"},
+            {"interfaceName":"eth2","network":"rdma-0"},
+            {"interfaceName":"eth3","network":"rdma-1"},
+            {"interfaceName":"eth4","network":"rdma-2"},
+            {"interfaceName":"eth5","network":"rdma-3"},
+            {"interfaceName":"eth6","network":"rdma-4"},
+            {"interfaceName":"eth7","network":"rdma-5"},
+            {"interfaceName":"eth8","network":"rdma-6"},
+            {"interfaceName":"eth9","network":"rdma-7"}
+          ]
+      labels:
+        app: torch-job
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: {{ .Values.infra.nodepool_name }} # Required here for Kueue 
+      tolerations: # Required here for Kueue 
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+      serviceAccountName: erik-ksa
+      subdomain: headless-svc
+      restartPolicy: OnFailure
+      containers:
+        - name: job
+          resources:
+            limits:
+              nvidia.com/gpu: 8
+            requests:
+              nvidia.com/gpu: 8
+          image: {{ .Values.image.name }}
+          command: [ "torchrun" ]
+          args: [
+            "--nnodes={{ .Values.training.parallelism }}", 
+            "--nproc_per_node=8",
+            "--node_rank=$(JOB_COMPLETION_INDEX)",
+            "--rdzv_id=123",
+            "--rdzv_endpoint=torch-job-0.headless-svc:29400",
+            "--rdzv_backend=c10d",
+            "/data/fsdp.py"
+          ]
+          ports:
+          - containerPort: 29400
+            protocol: TCP
+          env:
+            # Required 
+            - name: LD_LIBRARY_PATH
+              value: /usr/local/nvidia/lib64
+            # Distributed torch job settings 
+            - name: MODEL_ID
+              value: {{ .Values.training_params.model_id | quote }}
+            - name: DATASET_ID
+              value: {{ .Values.training_params.dataset_id | quote }}
+            - name: DATALOADER_NUM_WORKERS
+              value: {{ .Values.training_params.dataloader_num_workers | quote }}
+            - name: OUTPUT_DIR
+              value: {{ .Values.training_params.output_dir | quote }}
+            - name: PROCESSED_DATASET_DIR
+              value: {{ .Values.training_params.processed_dataset_dir | quote }}
+            - name: DATASET_SEED
+              value: {{ .Values.training_params.dataset_seed | quote }}
+            - name: SYSTEM_INSTRUCT
+              value: {{ .Values.training_params.system_instruct | quote }}
+            - name: TEST_SIZE
+              value: {{ .Values.training_params.test_size | quote }}
+            - name: TRAIN_WITH_SAMPLE
+              value: {{ .Values.training_params.train_with_sample | quote }}
+            - name: TRAIN_SAMPLE_SIZE
+              value: {{ .Values.training_params.train_sample_size | quote }}
+            - name: SHARED_STORAGE
+              value: {{ .Values.training_params.shared_storage | quote }}
+            - name: CHECKPOINT_EPOCHS
+              value: {{ .Values.training_params.checkpoint_epochs | quote }}
+            # --- Training Hyperparameters ---
+            - name: NUM_TRAIN_EPOCHS
+              value: {{ .Values.training_params.num_train_epochs | quote }}
+            - name: PER_DEVICE_TRAIN_BATCH_SIZE
+              value: {{ .Values.training_params.per_device_train_batch_size | quote }}
+            - name: GRADIENT_ACCUMULATION_STEPS
+              value: {{ .Values.training_params.gradient_accumulation_steps | quote }}
+            - name: LEARNING_RATE
+              value: {{ .Values.training_params.learning_rate | quote }}
+            - name: MAX_GRAD_NORM
+              value: {{ .Values.training_params.max_grad_norm | quote }}
+            - name: WARMUP_RATIO
+              value: {{ .Values.training_params.warmup_ratio | quote }}
+            - name: MAX_SEQ_LENGTH
+              value: {{ .Values.training_params.max_seq_length | quote }}
+            # --- LORA Hyperparameters ---
+            - name: PEFT
+              value: {{ .Values.training_params.peft | quote }}
+            - name: PEFT_R
+              value: {{ .Values.training_params.peft_r | quote }}
+            - name: PEFT_ALPHA
+              value: {{ .Values.training_params.peft_alpha | quote }}
+            - name: PEFT_DROPOUT
+              value: {{ .Values.training_params.peft_dropout | quote }}
+            # --- Performance & Hardware ---
+            - name: PEAK_GPU_TFLOPS
+              value: {{ .Values.training_params.peak_gpu_tflops | quote }}
+            # --- Hugging face home ---
+            - name: HF_HOME
+              value: {{ .Values.training_params.hf_home | quote }}
+            # --- NCCL timeout ---
+            - name: NCCL_TIMEOUT
+              value: {{ .Values.nccl_params.timeout | quote }}
+            # --- Hugging face token ---
+            - name: HUGGING_FACE_HUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-secret
+                  key: hf_api_token
+            # --- NCCL debug settings ---
+            - name: NCCL_DEBUG
+              value: {{ .Values.nccl_params.debug | quote }}
+            - name: NCCL_DEBUG_SUBSYS
+              value: {{ .Values.nccl_params.debug_subsys | quote }}
+            # --- NCCL Performance settings ---
+            - name: NCCL_NET
+              value: {{ .Values.nccl_params.net | quote }}
+            - name: NCCL_CROSS_NIC
+              value: {{ .Values.nccl_params.cross_nic | quote }}
+            - name: NCCL_NET_GDR_LEVEL
+              value: {{ .Values.nccl_params.net_gdr_level | quote }}
+            - name: NCCL_P2P_NET_CHUNKSIZE
+              value: {{ .Values.nccl_params.p2p_net_chunksize | quote }}
+            - name: NCCL_P2P_PCI_CHUNKSIZE
+              value: {{ .Values.nccl_params.p2p_pci_chunksize | quote }}
+            - name: NCCL_P2P_NVL_CHUNKSIZE
+              value: {{ .Values.nccl_params.p2p_nvl_chunksize | quote }}
+            - name: NCCL_NVLS_CHUNKSIZE
+              value: {{ .Values.nccl_params.nvls_chunksize | quote }}
+            - name: NCCL_IB_GID_INDEX
+              value: {{ .Values.nccl_params.ib_gid_index | quote }}
+            - name: NCCL_IB_ADAPTIVE_ROUTING
+              value: {{ .Values.nccl_params.ib_adaptive_routing | quote }}
+            - name: NCCL_IB_QPS_PER_CONNECTION
+              value: {{ .Values.nccl_params.ib_qps_per_connection | quote }}
+            - name: NCCL_IB_TC
+              value: {{ .Values.nccl_params.ib_tc | quote }}
+            - name: NCCL_IB_FIFO_TC
+              value: {{ .Values.nccl_params.ib_fifo_tc | quote }}
+            - name: NCCL_TUNER_CONFIG_PATH
+              value: {{ .Values.nccl_params.tuner_config_path | quote }}
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: library-dir-host
+              mountPath: /usr/local/nvidia
+            - name: gib
+              mountPath: /usr/local/gib
+            - name: training-bucket-vol
+              mountPath: /data
+            - name: shared-memory
+              mountPath: /dev/shm
+      volumes:
+        - name: library-dir-host
+          hostPath:
+            path: /home/kubernetes/bin/nvidia
+        - name: gib
+          hostPath:
+            path: /home/kubernetes/bin/gib
+        - name: shared-memory
+          emptyDir:
+            medium: "Memory"
+            sizeLimit: 250Gi
+        - name: training-bucket-vol
+          persistentVolumeClaim:
+            claimName: training-bucket-pvc
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: training-bucket-pv
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 768Gi
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: gcsfuse-sc # dummy storage class
+  mountOptions:
+  - implicit-dirs                       # Create implicit directories locally when accessed
+  - metadata-cache:negative-ttl-secs:0  # Disable caching for lookups of files/dirs that don't exist
+  - metadata-cache:ttl-secs:-1          # Keep cached metadata (file attributes, types) indefinitely time-wise
+  - metadata-cache:stat-cache-max-size-mb:-1 # Allow unlimited size for the file attribute (stat) cache
+  - metadata-cache:type-cache-max-size-mb:-1 # Allow unlimited size for the file/directory type cache
+  - file-cache:max-size-mb:-1           # Allow unlimited size for the file content cache
+  - file-cache:cache-file-for-range-read:true # Cache the entire file when any part is read sequentially
+  - file-cache:enable-parallel-downloads:true # Use multiple streams to download file content faster
+  - read_ahead_kb=1024                  # Increase kernel read-ahead buffer
+  - write:enable-streaming-writes:true  # Enable streaming writes
+  csi:
+    driver: gcsfuse.csi.storage.gke.io
+    volumeHandle: {{ .Values.fuse.bucket | quote }}    # Name of the GCS Bucket to mount
+    volumeAttributes:
+      skipCSIBucketAccessCheck: "true"  # Bypass the CSI Drivers bucket access check
+      gcsfuseMetadataPrefetchOnMount: "true" # Fetch GCS metadata immediately at mount time
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: training-bucket-pvc
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 768Gi
+  storageClassName: gcsfuse-sc # dummy storage class
