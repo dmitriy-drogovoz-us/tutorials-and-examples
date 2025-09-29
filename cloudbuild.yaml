@@ -1,25 +1,26 @@
 steps:
 - name: 'ubuntu'
   id: 'run_tests'
+  entrypoint: 'bash'
   args:
-    - -c
-    - |
-      echo "fail" > /workspace/ray_serve_gke_cluster_result.txt
+  - -c
+  - |
+    echo "fail" > /workspace/ray_serve_gke_cluster_result.txt
   waitFor: ['-']
 
 - name: 'gcr.io/cloud-builders/curl'
   id: 'create_github_issue'
   entrypoint: '/bin/bash'
   args:
-    - -c
-    - |
-      if [[ $(cat /workspace/ray_serve_gke_cluster_result.txt) != "pass" ]]; then
-        curl -X POST \
-             -H "Authorization: Bearer $_GITHUB_TOKEN" \
-             -H "Content-Type: application/json" \
-             -d '{ "title": "Automated Issue: Build Failed", "body": "Cloud Build failed to pass tests for commit $SHORT_SHA. Please check the logs at: https://console.cloud.google.com/cloud-build/builds/$_BUILD_ID?project=$PROJECT_ID", "labels": ["CI/CD"] }' \
-             "https://api.github.com/repos/YOUR_GITHUB_USER/YOUR_REPO_NAME/issues"
-      fi
+  - -c
+  - |
+    if [[ $(cat /workspace/ray_serve_gke_cluster_result.txt) != "pass" ]]; then
+      curl -X POST \
+            -H "Authorization: Bearer $_GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{ "title": "Automated Issue: Build Failed", "body": "Cloud Build failed to pass tests for commit $SHORT_SHA. Please check the logs at: https://console.cloud.google.com/cloud-build/builds/$_BUILD_ID?project=$PROJECT_ID", "labels": ["CI/CD"] }' \
+            "https://api.github.com/repos/YOUR_GITHUB_USER/YOUR_REPO_NAME/issues"
+    fi
   waitFor: ['run_tests']
 logsBucket: gs://ai-on-gke-qss-build-logs
 options:
