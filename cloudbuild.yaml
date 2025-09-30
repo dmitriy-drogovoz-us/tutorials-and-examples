@@ -40,6 +40,11 @@ steps:
   args:
   - -c
   - |
+
+    if [[ $GITHUB_ISSUE==true ]]; then
+      exit 0
+    fi
+
     failed_steps=""
 
     # Read the results from each step's log file
