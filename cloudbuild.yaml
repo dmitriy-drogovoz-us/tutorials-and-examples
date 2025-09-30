@@ -18,7 +18,7 @@ steps:
   - |
     echo "fail" > /workspace/tests_result.txt
     echo "mocked tests step"
-    echo "pass" > /workspace/tests_result.txt
+    # echo "pass" > /workspace/tests_result.txt
   waitFor: ['cluster creation']
 
 
