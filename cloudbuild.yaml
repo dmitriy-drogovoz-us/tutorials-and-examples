@@ -41,7 +41,8 @@ steps:
   - -c
   - |
 
-    if [[ $_GITHUB_ISSUE!="true" ]]; then
+    echo $_GITHUB_ISSUE
+    if [[ $_GITHUB_ISSUE != "true" ]]; then
       exit 0
     fi
 
