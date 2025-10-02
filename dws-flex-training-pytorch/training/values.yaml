@@ -1,0 +1,102 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# Default values for training.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+
+infra:
+  nodepool_name: gpu-nodepool-dws
+  spot: false 
+
+training:
+  parallelism: 2 
+
+kueue:
+  max_run_duration: 7200 
+
+image:
+  name: 
+
+fuse:
+  bucket: tutorial-torch-training-south
+  
+
+training_params:
+  # --- Distributed torch job settings ---
+  # Models tested with: 
+  # meta-llama/Llama-3.1-8B-Instruct
+  # meta-llama/Llama-3.1-70B-Instruct
+
+  # google/gemma-3-27b-it
+  # google/gemma-3-4b-it
+
+  model_id: "meta-llama/Llama-3.1-70B-Instruct"
+  dataset_id: "philschmid/gretel-synthetic-text-to-sql"
+  dataloader_num_workers: "12"
+  output_dir: "/data/llama3.1-70b-sql"
+  processed_dataset_dir: "/data/gretel-sql-processed"
+  dataset_seed: "42"
+  system_instruct: "False"
+  test_size: "0.1"
+  train_with_sample: "False"
+  train_sample_size: "100000"
+  shared_storage: "False"
+  checkpoint_epochs: "10"
+
+  # --- Training Hyperparameters ---
+  num_train_epochs: "10"
+  per_device_train_batch_size: "8"
+  gradient_accumulation_steps: "8"
+  learning_rate: "0.00005" # increase lr if reducing batch size (batchsize*gradacum)
+  max_grad_norm: "0.3"
+  warmup_ratio: "0.03"
+  max_seq_length: "512"
+
+  # --- LoRA Hyperparameters ---
+  peft: "False"
+  peft_r: "16"
+  peft_alpha: "16"
+  peft_dropout: "0.05"
+
+  # --- Performance & Hardware ---
+  peak_gpu_tflops: "2250"
+
+  # --- Hugging Face home ---
+  hf_home: "/" # Issues with GCS Fuse writing the checkpoint shards from HF 
+
+nccl_params:
+  # --- NCCL timeout ---
+  timeout: "120"
+  
+  # --- NCCL debug settings ---
+  debug: "ERROR"
+  debug_subsys: "INIT,NET,ENV,COLL,GRAPH"
+
+  # --- NCCL Performance settings ---
+  net: "gIB"
+  cross_nic: "0"
+  net_gdr_level: "PIX"
+  p2p_net_chunksize: "131072"
+  p2p_pci_chunksize: "131072"
+  p2p_nvl_chunksize: "524288"
+  nvls_chunksize: "524288"
+  ib_gid_index: "3"
+  ib_adaptive_routing: "1"
+  ib_qps_per_connection: "4"
+  ib_tc: "52"
+  ib_fifo_tc: "84"
+  tuner_config_path: "/usr/local/gib/configs/tuner_config_a4.txtpb"

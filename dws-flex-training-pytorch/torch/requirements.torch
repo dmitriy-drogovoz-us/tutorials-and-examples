@@ -1,0 +1,11 @@
+datasets==3.5.0
+transformers==4.53.0
+tqdm
+peft==0.15.2
+wandb==0.19.9
+pandas==2.2.3
+bitsandbytes==0.45.5
+accelerate==1.8.1
+pillow 
+gcs-torch-dataflux==1.4.0
+flash-attn
