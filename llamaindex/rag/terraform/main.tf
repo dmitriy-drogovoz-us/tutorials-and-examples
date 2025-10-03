@@ -20,7 +20,7 @@ locals {
 }
 
 module "gke_cluster" {
-  source = "github.com/ai-on-gke/common-infra//common/infrastructure?ref=main"
+  source = "git::https://github.com/ai-on-gke/common-infra//common/infrastructure"
 
   project_id        = var.project_id
   cluster_name      = local.cluster_name
