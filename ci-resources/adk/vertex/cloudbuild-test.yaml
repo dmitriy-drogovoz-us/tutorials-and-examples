@@ -1,0 +1,42 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+steps:
+- id: "adk-vertex: prepare tests"
+  name: "gcr.io/cloud-builders/gcloud"
+  entrypoint: "bash"
+  args:
+    - '-c'
+    - |
+      cp -r /workspace/ci-resources/adk/vertex/tests /workspace/adk/vertex/tests
+      echo $_ADK_VERTEX_REGION
+      echo $_USER_NAME
+      echo $_AUTOPILOT_CLUSTER
+      echo $_BUILD_ID
+      echo $_ITERATION
+substitutions:
+  _ADK_VERTEX_REGION: us-central1
+  _USER_NAME: github
+  _AUTOPILOT_CLUSTER: "true"
+  _BUILD_ID: ${BUILD_ID:0:8}
+  _ITERATION: "0"
+logsBucket: gs://ai-on-gke-qss-build-logs
+options:
+  substitutionOption: "ALLOW_LOOSE"
+  machineType: "E2_HIGHCPU_8"
+timeout: 5400s
+availableSecrets:
+  secretManager:
+  - versionName: projects/ai-on-gke-qss/secrets/dmitriy-drogovoz-us-ci-gcp/versions/latest
+    env: "GITHUB_TOKEN"
